@@ -3,25 +3,33 @@
 # Date:	08162012
 # Notes: 	id free text in data, apply mohsen's dictionary to find words, then parse apart the words
 # source: source("/home/j/Project/VA/external_va/FreeText/Code/00_text_mining_external.R")
+#
+# DO NOT USE THE LATEST VERSION OF `tm`
+# There is a change in tm v0.6 which breaks this code (also I don't know how different the algorithm is)
+# install.packages("http://cran.r-project.org/bin/windows/contrib/3.0/tm_0.5-10.zip",repos=NULL)
 ##############################################################
-
-who = "Adult"
 
 library(tm)
 library(rJava)
 library(foreign)
+library(readstata13)
+
+if (length(args)==0) {
+    working_dir = paste(args[1], "data/working/")
+} else {
+    working_dir = "C:/Users/josephj7/Desktop/repos/va/tariff_2/data/working/"
+}
 
 for (who in c("Neonate", "Child", "Adult")) {
-	
-    setwd("J:/Project/VA/Publication/FreeText/Words")
-	targetFile = paste(who, "_words_all_variables_50freq.csv", sep="")
     
-    data = read.dta(paste("J:/Project/VA/Publication/Revised Data/Presymptom Data/VA Final - ", who, ".dta", sep=""))
+	targetFile = paste(working_dir, "freetext/", who, "_words_all_variables_50freq.csv", sep="")
+    
+    data = read.dta13(paste(working_dir, "VA Final - ", who, ".dta", sep=""))
 
     # specify the minimum word count for the feature to be tokenized
 	targetFreq = 50
 
-	keepWords = read.csv("J:/Project/VA/Publication/FreeText/Maps/keepWords.csv", stringsAsFactors=FALSE)
+	keepWords = read.csv(paste(working_dir, "freetext/keepWords.csv", sep=""), stringsAsFactors=FALSE)
 	
     # subset keepWords for only particular module
     keepWords = keepWords[,c(who)]
@@ -46,10 +54,10 @@ for (who in c("Neonate", "Child", "Adult")) {
 
     detach(data)
     
-    write.csv(all.txt, paste("J:/Project/VA/Publication/FreeText/Words/", who, "_all_words_pre_dictionary.csv", sep=""))
+    write.csv(all.txt, paste(working_dir, "freetext/", who, "_all_words_pre_dictionary.csv", sep=""))
 
     #This is where we used to bring in Mohsen's Dictionary, I have updated it to include spell check and clinical stuff we have uncovered through this process
-    dict = read.csv("J:/Project/VA/Publication/FreeText/Maps/DICT-5.csv", stringsAsFactors=FALSE)
+    dict = read.csv(paste(working_dir, "freetext/DICT-5.csv", sep=""), stringsAsFactors=FALSE)
 
     # replace words based on dictionary, but not going to catch everything.  Just stuff by commas, periods, semicolons, and spaces.
     i=1
@@ -62,7 +70,7 @@ for (who in c("Neonate", "Child", "Adult")) {
         all.txt[,2] = gsub(paste(" ", dict$old[i], "'", sep=""), paste(" ", dict$new[i], " ", sep=""), all.txt[,2], ignore.case = TRUE)
     }
 
-    write.csv(all.txt, paste("J:/Project/VA/Publication/FreeText/Words/", who, "_all_words.csv", sep=""))
+    write.csv(all.txt, paste(working_dir, "freetext/", who, "_all_words.csv", sep=""))
 
 	#specify the unique identifier
 	id = all.txt$sid

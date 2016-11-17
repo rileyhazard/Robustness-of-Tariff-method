@@ -22,12 +22,13 @@ if c(os) == "Unix" {
 	local prefix "/home/j"
 }
 
-global code_dir "`prefix'/Project/VA/Publication_2015/Revised Data/Code"
-local code_dir "`prefix'/Project/VA/Publication_2015/Revised Data/Code"
-local tab_dir "`prefix'/Project/VA/Publication_2015/Revised Data/Code/Tabulations"
+local repo "`1'"
+if "`repo'" == "" local repo "C:/Users/josephj7/Desktop/repos/va/tariff_2"
+global wdir "`repo'/data/working"
+global code_dir "`repo'/src"
+local code_dir "$code_dir"
 local in_dir "`prefix'/Project/GC13/Verbal Autopsy/VA Data"
-local out_dir "`prefix'/Project/VA/Publication_2015/Revised Data/Presymptom Data"
-local out_dir "`prefix'/Project/VA/Publication_2015/Revised Data/Presymptom Data"
+local out_dir "$wdir"
 
 ** capture log close
 ** log using "`out_dir'/Log.smcl", replace
@@ -774,7 +775,7 @@ foreach site of local sites {
 	** }
 ** }
 
-import excel using "${code_dir}/Master Codebook.xlsx", first clear
+import excel using "`out_dir'/maps/Master Codebook.xlsx", first clear
 tostring fill, replace
 ** foreach var of varlist * {
 	** local name = `var'[1]
@@ -793,8 +794,7 @@ foreach module in Adult Child {
 }
 
 // LOOP THROUGH MODULES
-local module Adult
-** foreach module in Adult Child {
+foreach module in Adult Child {
 	clear
 	gen site = ""
 	tempfile `module'
@@ -986,7 +986,7 @@ local module Adult
 			drop gs* va*
 			merge 1:1 site sid using "`out_dir'/VA Final - Adult.dta", keep(1 3) nogen keepusing(gs* va*)
 			compress
-			save "`out_dir'/VA Recall - Adult.dta", replace
+			* save "`out_dir'/VA Recall - Adult.dta", replace
 		restore
 	}
 
@@ -1002,7 +1002,7 @@ local module Adult
 		
 		// prep module map
 			preserve
-				import excel using "`code_dir'/Master Cause Map.xlsx", first clear
+				import excel using "`out_dir'/maps/Master Cause Map.xlsx", first clear
 				keep if module == "Child" | module == "Neonate"
 				rename gs_code55 gs_diagnosis
 				keep module gs_diagnosis
@@ -1052,7 +1052,7 @@ local module Adult
 			keep if SR == 1
 			drop SR
 			compress
-			save "`out_dir'/VA Recall - Neonate.dta", replace
+			* save "`out_dir'/VA Recall - Neonate.dta", replace
 		restore
 	// CHILD
 		use `child', clear
@@ -1073,11 +1073,10 @@ local module Adult
 			keep if SR == 1
 			drop SR
             compress
-			save "`out_dir'/VA Recall - Child.dta", replace
+			* save "`out_dir'/VA Recall - Child.dta", replace
 		restore
 	}
 }
 
 capture log close
-}
 

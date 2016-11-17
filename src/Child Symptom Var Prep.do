@@ -10,17 +10,17 @@ if ("`c(os)'"=="Windows") local prefix	"J:"
 else local prefix "/home/j"
 
 ** directories
-local in_dir "`prefix'/Project/VA/Publication_2015/Revised Data/Presymptom Data"
-local out_dir "`prefix'/Project/VA/Publication_2015/Revised Data/Symptom Data"
-local mrr "`prefix'/Project/VA/Publication_2015/Revised Data/Dump Folder/MRRTEXT/"
-local dump "`prefix'/Project/VA/Publication_2015/Revised Data/Dump Folder"
-local code "`prefix'/Project/VA/Publication_2015/Revised Data/Code"
-local tariff_prep "`prefix'/Project/VA/Publication_2015/Revised Data/Codebook"
+local repo "`1'"
+if "`repo'" == "" local repo "C:/Users/josephj7/Desktop/repos/va/tariff_2"
+global wdir "`repo'/data/working"
+global code_dir "`repo'/src"
+local in_dir "$wdir"
+local out_dir "$wdir"
+local mrr "$wdir"
+local dump "$wdir/dump"
+local code "$code_dir"
+local tariff_prep "$wdir"
 
-global dump "`prefix'/Project/VA/Publication_2015/Revised Data/Dump Folder"
-global in_dir `in_dir'
-global out_dir `out_dir'
-global tariff_prep `tariff_prep'
 global who = "Child"
 
 local gen_splits = 0
@@ -619,7 +619,7 @@ save "`dump'/childdata", replace
 ** README WORDS NO LONGER MATCH UP TO OUR MODULES...THIS MAKES THIS PARTICULAR MERGE IMPOSSIBLE
 ** therefore, just merge on previously create mrr from published material
 if 1==0 {
-use  "J:/Project/VA/FinalAnalysis/Data/Models/Child/ChildData.dta", clear
+use  "$wdir/ChildData.dta", clear
 keep sid s99991-s999990
 
 merge 1:1 sid using "`dump'/childdata"
@@ -630,7 +630,7 @@ drop _m
 
 ** Bring in the free text from tm
 if 1==1 {
-    use "J:/Project/VA/Publication/FreeText/Words/Child_text.dta", clear
+    use "$wdir/freetext/Child_text.dta", clear
     merge 1:1 sid using "`dump'/childdata", nogen
 }
 
@@ -905,7 +905,7 @@ foreach var of local screen_symps {
 
 drop s180 s181
 preserve
-do "`code'/Dichotomize/weight_for_age_who_standards.do"
+do "`code'/weight_for_age_who_standards.do"
 restore
 
 merge 1:1 sid using "`dump'/${who}_weightforage.dta", nogen

@@ -18,10 +18,18 @@ if c(os) == "Unix" {
 }
 
 ** set locals
-local iters 500
-local who Adult
-local home "`prefix'/Project/VA/Publication/FreeText"
-local input_data "`home'/Words/`who'_words_all_variables_50freq.csv"
+local repo "`1'"
+if "`repo'" == "" local repo "C:/Users/josephj7/Desktop/repos/va/tariff_2"
+local who "`2'"
+if "`who'" == "" local who "Adult"
+local iters "`3'"
+if "`iters'" == "" local iters 3   // keep default small for testing
+
+global wdir "`repo'/data/working"
+global code_dir "`repo'/src"
+local input_data "$wdir/freetext/`who'_words_all_variables_50freq.csv"
+
+
 
     if "`who'"=="Adult" {
         local whonc = "adult"
@@ -64,7 +72,7 @@ foreach var of varlist word* {
 
 ** drop all free text that was deemed clinically insignificant or misleading by "expert knowledge"
 preserve
-insheet using "J:\Project\VA\Publication\FreeText\Maps\dropWords.csv", clear names
+insheet using "$wdir/freetext/dropWords.csv", clear names
 levelsof `whonc', local(drop) clean
 restore
 
@@ -79,7 +87,7 @@ foreach x of local drop {
 
 preserve
 ** make a drop list excluding the variables not outputted by tm
-insheet using "J:\Project\VA\Publication\FreeText\Maps\dropWords.csv", clear names
+insheet using "$wdir/freetext/dropWords.csv", clear names
 foreach var of local list {
     drop if `whonc'=="`var'"
     levelsof `whonc', local(drop) clean
@@ -90,12 +98,13 @@ restore
 drop `drop'
     
 ** merge on the cause_var by sid
-merge 1:1 sid using "J:/Project/VA/Publication/Revised Data/Symptom Data/`who'Data.dta", keepusing(`cause_var')
+merge 1:1 sid using "$wdir/VA Final - `who'.dta", keepusing(`cause_var') // grab cause_var from presymptom file instead of symptom
+drop if `cause_var' == .
 
 ** break the code if there are missing observations either in free text or s vars - have to comment this out for 2/27 run because we did drop some from the svars but we're adding them back in
 summ _merge
 if r(mean)!=3 {
-    BREAK_Merge_codebook_Failed
+    * BREAK_Merge_codebook_Failed
 }    
 keep if _merge==3
 drop _m
@@ -131,13 +140,10 @@ forvalues i = 1/`iters' {
         
         ** reshape long
         reshape long tariff_, j(xs_name) i(`cause_var') string
-        rensfix _ `i'
+        rename tariff_ tariff
 
         ** save
-        capture mkdir "`home'/Bootstrap"
-        capture mkdir "`home'/Bootstrap/`who'"
-        capture mkdir "`home'/Bootstrap/`who'/draws"
-        save "`home'/Bootstrap/`who'/draws/tariff_`i'_`who'.dta", replace
+        save "$wdir/freetext/draws/text_`i'_`who'.dta", replace
 
 
         di in red "FINISHED ITERATION # `i' - `who'"
@@ -148,10 +154,10 @@ forvalues i = 1/`iters' {
 clear all
 ** combine all draws
 
-use "`home'/Bootstrap/`who'/draws/tariff_1_`who'.dta", clear
+use "$wdir/freetext/draws/text_1_`who'.dta", clear
 
 forvalues x=2/`iters' {
-    merge 1:1 `cause_var' xs_name using "`home'/Bootstrap/`who'/draws/tariff_`x'_`who'.dta", nogen
+    merge 1:1 `cause_var' xs_name using "$wdir/freetext/draws/text_`x'_`who'.dta", nogen
 }
     
 ** calculate confidence interval to determine significance    
@@ -166,7 +172,7 @@ gen significant=0
 replace significant=1 if pctile_0_5<0 & pctile_99_5<0 | pctile_0_5>0 & pctile_99_5>0
 
 
-save "`home'/Bootstrap/`who'/`who'_`iters'_bootstrapped_tariff_CIs.dta", replace
+save "$wdir/freetext/`who'_`iters'_bootstrapped_tariff_CIs.dta", replace
 
 
 
@@ -175,7 +181,7 @@ save "`home'/Bootstrap/`who'/`who'_`iters'_bootstrapped_tariff_CIs.dta", replace
 ***************************************************
 
 ** create matrix of indicator of significance for symptoms by cause, save these all as locals
-use "`home'/Bootstrap/`who'/`who'_`iters'_bootstrapped_tariff_CIs.dta", clear
+use "$wdir/freetext/`who'_`iters'_bootstrapped_tariff_CIs.dta", clear
 levelsof xs_name, local(xs_name)
 
 keep `cause_var' xs_name sig
@@ -191,7 +197,7 @@ foreach x of local xs_name {
     }    
 }    
 
-save "`home'/Bootstrap/`who'/`who'_`iters'_significance_matrix.dta", replace
+save "$wdir/freetext/`who'_`iters'_significance_matrix.dta", replace
 
 
 

@@ -18,12 +18,16 @@ if c(os) == "Unix" {
 }
 
 ** set locals
-local home "`prefix'/Project/VA/Publication_2015/Revised Data/Bootstrap Tariffs"
-local codebook "`prefix'/Project/VA/Publication_2015/Revised Data/Codebook"
-local iters 500
+local repo "`1'"
+if "`repo'" == "" local repo "C:/Users/josephj7/Desktop/repos/va/tariff_2"
+local iters "`2'"
+if "`iters'" == "" local iters 3   // keep default small for testing
 
-local who Adult
-** foreach who in Adult {
+global wdir = "`repo'/data/working"
+global code_dir "`repo'/src"
+
+local who Neonate
+foreach who in Adult Child Neonate {
 
     if "`who'"=="Adult" {
         local whonc = "adult"
@@ -55,7 +59,7 @@ local who Adult
         local aggr_cl_text "gs_text34"	
     }  
 
-        local input_data "`prefix'/Project/VA/Publication_2015/Revised Data/Symptom Data/`who'Data.dta"
+        local input_data "$wdir/`who'Data.dta"
         
         ** Try creating a just age
         use "`input_data'", clear
@@ -96,7 +100,7 @@ local who Adult
                 rename *_ *`iter'
 
                 ** save
-                save "`home'/`who'/draws/tariff_`i'.dta", replace
+                save "$wdir/significance/draws/tariff_`i'_`who'.dta", replace
 
                 di in red "FINISHED ITERATION # `i' - `who'"
                 
@@ -105,10 +109,10 @@ local who Adult
 
         clear all
         ** combine all tempfiles
-        use "`home'/`who'/draws/tariff_1.dta", clear
+        use "$wdir/significance/draws/tariff_1_`who'.dta", clear
 
         forvalues i=2/`iters' {
-            merge 1:1 `cause_var' xs_name using "`home'/`who'/draws/tariff_`i'.dta", nogen
+            merge 1:1 `cause_var' xs_name using "$wdir/significance/draws/tariff_`i'_`who'.dta", nogen
         }
             
         ** calculate confidence interval to determine significance    
@@ -119,14 +123,14 @@ local who Adult
         gen significant=0
         replace significant=1 if pctile_0_5<0 & pctile_99_5<0 | pctile_0_5>0 & pctile_99_5>0
 
-        save "`home'/`who'/`iters' compiled tariff draws.dta", replace
+        save "$wdir/significance/`who'_`iters'_compiled_tariff_draws.dta", replace
 
 ***************************************************
 ** make significance matrix with this information--
 ***************************************************
 
     ** create matrix of indicator of significance for symptoms by cause, save these all as locals
-    use "`home'/`who'/`iters' compiled tariff draws.dta", clear
+    use "$wdir/significance/`who'_`iters'_compiled_tariff_draws.dta", clear
     levelsof xs_name, local(xs_name)
 
     keep `cause_var' xs_name significant
@@ -144,7 +148,7 @@ local who Adult
 
     
 
-    save "`home'/`who'/`who'_significance_matrix_`iters'.dta", replace
+    save "$wdir/significance/`who'_significance_matrix_`iters'.dta", replace
 	global who `who'
 	
     ** do "J:\Project\VA\Publication\Revised Data\Bootstrap Tariffs\transpose significance matrix for RF.do"

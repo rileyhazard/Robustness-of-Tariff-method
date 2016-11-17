@@ -5,14 +5,16 @@
 # source:   source("/home/j/Project/VA/Publication/Revised Data/Code/04_generate_splits.R")
 ##############################################################
 
-# Set OS
-if (.Platform$OS.type=="windows") prefix = "J:"  else if (.Platform$OS.type=="unix") prefix = "/home/j" else cat("ERROR IN PLATFORM...")
-
+if (length(args)==0) {
+    working_dir = paste(args[1], "data/working/")
+} else {
+    working_dir = "C:/Users/josephj7/Desktop/repos/va/tariff_2/data/working/"
+}
 library(foreign)
+library(readstata13)
 set.seed(123)
 
-who="Neonate"
-for (who in c("Neonate")) {
+for (who in c("Neonate", "Child", "Adult")) {
     if (who=="Adult") {
 		cause_var = "va34"
 		cause_count = 34
@@ -30,7 +32,7 @@ for (who in c("Neonate")) {
 	}
     
     # get population size in data set to sample up to
-    data = read.dta(paste(prefix, "/Project/VA/Publication/Revised Data/Symptom Data/", who, "Data.dta", sep=""))
+    data = read.dta13(paste(working_dir, who, "Data.dta", sep=""))
     pop_size = nrow(data)
     
     # create an empty matrix to fill in with split counts
@@ -38,8 +40,7 @@ for (who in c("Neonate")) {
     colnames(splits) = paste("test", 1:500, sep="")
     
     # read in dirichlet draws (random csmfs)
-    home = paste(prefix, "/Project/VA/Publication/Revised Data/", sep="")
-    dirichlet = read.csv(paste(home, "Splits/dirichlet_draw_", cause_count, ".csv", sep=""), stringsAsFactors=FALSE)
+    dirichlet = read.csv(paste(working_dir, "splits/dirichlet_draw_", cause_count, ".csv", sep=""), stringsAsFactors=FALSE)
     # turn CSMFs into estimated number of deaths per cause per split
     dirichlet_pop = round(pop_size*dirichlet)
     
@@ -78,6 +79,6 @@ for (who in c("Neonate")) {
     # combine splits and sids
     splits_df = as.data.frame(cbind(sids, splits))
     splits_df$sid=as.character(splits_df$sid)
-    write.dta(splits_df, paste(prefix, "/Project/VA/Publication/Revised Data/Splits/", who, "_splits_", cause_count, ".dta", sep=""), convert.factors="numeric")
+    write.dta(splits_df, paste(working_dir, "splits/", who, "_splits_", cause_count, ".dta", sep=""), convert.factors="numeric")
     cat(paste("Saved", who, "\n"))
 }

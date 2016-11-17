@@ -14,11 +14,11 @@ if c(os) == "Windows" {
 if c(os) == "Unix" {
 	local prefix "/home/j"
 }
-local code_dir ${code_dir}
+local code_dir $wdir
 tempfile data
 save `data', replace
 
-import excel using "`code_dir'/Master Cause Map.xlsx", first clear
+import excel using "`code_dir'/maps/Master Cause Map.xlsx", first clear
 
 ** capture erase "`code_dir'/Master Cause Map.dta"
 ** capture confirm file "`code_dir'/Master Cause Map.xlsx"

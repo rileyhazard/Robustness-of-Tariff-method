@@ -7,11 +7,19 @@ set more off
 set matsize 700
 capture restore, not
 
+local repo "`1'"
+if "`repo'" == "" local repo "C:/Users/josephj7/Desktop/repos/va/tariff_2"
+local iters "`2'"
+if "`iters'" == "" local iters 3   // keep default small for testing
+
+global wdir "`repo'/data/working"
+global code_dir "`repo'/src"
+
 local who Adult
 foreach who in Neonate Adult Child {
     local dataFolder Revised
-    local input_data "J:/Project/VA/Publication/FreeText/Words/`who'_words_all_variables_50freq.csv"
-    local out_dir "J:/Project/VA/Publication/FreeText/Words/"
+    local input_data "$wdir/freetext/`who'_words_all_variables_50freq.csv"
+    local out_dir "$wdir"
 
     if "`who'"=="Adult" {
         local whonc = "adult"
@@ -57,7 +65,7 @@ foreach who in Neonate Adult Child {
 
     ** drop all free text that was deemed clinically insignificant or misleading by "expert knowledge"
      preserve
-    insheet using "J:\Project\VA\Publication\FreeText\Maps\dropWords.csv", clear names
+    insheet using "$wdir/freetext/dropWords.csv", clear names
     levelsof `whonc', local(drop) clean
     restore
     
@@ -72,7 +80,7 @@ foreach who in Neonate Adult Child {
     
     preserve
     ** make a drop list excluding the variables not outputted by tm
-    insheet using "J:\Project\VA\Publication\FreeText\Maps\dropWords.csv", clear names
+    insheet using "$wdir/freetext/dropWords.csv", clear names
     foreach var of local list {
         drop if `whonc'=="`var'"
         levelsof `whonc', local(drop) clean
@@ -85,7 +93,8 @@ foreach who in Neonate Adult Child {
 
     ** drop all observations no longer in the data set and get COD
 
-    merge 1:1 sid using "J:/Project/VA/Publication/`dataFolder' Data/Symptom Data/`who'Data.dta", keepusing(`cause_var')
+    merge 1:1 sid using "$wdir/VA Final - `who'.dta", keepusing(`cause_var') // grab cause_var from presymptom file instead of symptom
+    drop if `cause_var' == .
 
     keep if _merge==3
 
@@ -123,7 +132,7 @@ foreach who in Neonate Adult Child {
     levelsof xs_name, local(xs_name)
 
     preserve
-    use "J:\Project\VA\Publication\FreeText\Bootstrap\\`who'\\`who'_500_significance_matrix.dta", clear
+    use "$wdir/freetext/`who'_`iters'_significance_matrix.dta", clear
             foreach x of local xs_name {
                 forvalues s=1/`cause_count' {
                     local `x'_`s'=`x' in `s'
@@ -168,7 +177,7 @@ foreach who in Neonate Adult Child {
  
 
     ** save all text vars in codebook folder
-    outsheet using "`out_dir'/`who'_text_tariffs.csv", c replace
+    outsheet using "`out_dir'/freetext/`who'_text_tariffs.csv", c replace
     tempfile `who'_tmtext
     save ``who'_tmtext', replace
 
@@ -178,7 +187,7 @@ foreach who in Neonate Adult Child {
     keep gc13_label xs_name mrr mrr_text
     tempfile map
     save `map'
-    use "J:\Project\VA\Publication\Revised Data\Maps/`who'_symptoms.dta", clear
+    use "$wdir/maps/`who'_symptoms.dta", clear
     drop if substr(xs_name,1,5)=="s9999"
     append using `map'
     
@@ -210,5 +219,5 @@ foreach who in Neonate Adult Child {
     tempfile new_text
     save `new_text'
 
-    save "`out_dir'/`who'_text.dta", replace
+    save "`out_dir'/freetext/`who'_text.dta", replace
 }

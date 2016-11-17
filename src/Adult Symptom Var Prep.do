@@ -10,15 +10,17 @@ if ("`c(os)'"=="Windows") local prefix	"J:"
 else local prefix "/home/j"
 
 ** directories
-local in_dir "`prefix'/Project/VA/Publication_2015/Revised Data/Presymptom Data"
-local out_dir "`prefix'/Project/VA/Publication_2015/Revised Data/Symptom Data/"
-local mrr "`prefix'/Project/VA/Publication_2015/Revised Data/Dump Folder/MRRTEXT/"
-local dump "`prefix'/Project/VA/Publication_2015/Revised Data/Dump Folder"
-local code "`prefix'/Project/VA/Publication_2015/Revised Data/Code"
-local tariff_prep "`prefix'/Project/VA/Publication_2015/Revised Data/Codebook"
+local repo "`1'"
+if "`repo'" == "" local repo "C:/Users/josephj7/Desktop/repos/va/tariff_2"
+global wdir "`repo'/data/working"
+global code_dir "`repo'/src"
+local in_dir "$wdir"
+local out_dir "$wdir"
+local mrr "$wdir"
+local dump "$wdir/dump"
+local code "$code_dir"
+local tariff_prep "$wdir"
 
-global out_dir `out_dir'
-global tariff_prep `tariff_prep'
 global who="Adult"
 
 
@@ -282,7 +284,7 @@ save `adultdata', replace
 
     ** Bring in the free text from tm
     if 1==1 {
-        use "J:\Project\VA\Publication\FreeText\Words\Adult_text.dta", clear
+        use "$wdir/freetext/Adult_text.dta", clear
         merge 1:1 sid using `adultdata', nogen
     }
 

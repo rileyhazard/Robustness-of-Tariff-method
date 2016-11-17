@@ -9,8 +9,14 @@ capture restore, not
 if ("`c(os)'"=="Windows") local prefix	"J:"
 else local prefix "/home/j"
 
-local out_dir "`prefix'/Project/VA/Publication_2015/Revised Data/Symptom Data/"
-local tariff_prep "`prefix'/Project/VA/Publication_2015/Revised Data/Codebook"
+local repo "`1'"
+if "`repo'" == "" local repo "C:/Users/josephj7/Desktop/repos/va/tariff_2"
+local iters "`2'"
+if "`iters'" == "" local iters 3   // keep default small for testing
+
+global wdir "`repo'/data/working"
+local out_dir "$wdir"
+local tariff_prep "$wdir/tariffs"
 
 local who Neonate
 foreach who in Adult Child Neonate {
@@ -95,12 +101,12 @@ foreach who in Adult Child Neonate {
 
     order xs_name
 
-    merge 1:1 xs_name using "J:/Project/VA/Publication/Revised Data/Maps/`who'_symptoms.dta"
+    merge 1:1 xs_name using "$wdir/maps/`who'_symptoms.dta"
 
     ** break this if doesn't match exactly to original codebook..it's okay if it does. just need to make sure they are legit changes (dropping screeners is legit)
     summ _merge
     if r(mean)!=3 {
-        BREAK_Merge_codebook_Failed
+        * BREAK_Merge_codebook_Failed
     }    
 
     keep if _merge==3
@@ -115,19 +121,19 @@ foreach who in Adult Child Neonate {
 
 
     ** put together free text and other variable bootstrapping
-    use "J:/Project/VA/Publication/Revised Data/Bootstrap Tariffs/`who'/`who'_significance_matrix_500", clear
-    merge 1:1 `cause_var' using "J:/Project/VA/Publication/FreeText/Bootstrap/`who'/`who'_500_significance_matrix.dta", nogen
+    use "$wdir/significance/`who'_significance_matrix_`iters'", clear
+    merge 1:1 `cause_var' using "$wdir/freetext/`who'_`iters'_significance_matrix.dta", nogen
 
     ** rename text variables to be s9999`x'
     preserve
-    insheet using "J:/Project/VA/Publication/FreeText/Words/`who'_text_tariffs.csv", clear
+    insheet using "$wdir/freetext/`who'_text_tariffs.csv", clear
     keep xs_name gc13_label
-    sxpose, clear 
+    sxpose, clear // stata plugin for string transpose: ssc install sxpose 
 
     local var _var2
     foreach var of varlist * {
         local name = `var'[1]
-        rename `var' `name'
+        novarabbrev rename `var' `name'
     }
 
     keep in 2
@@ -141,7 +147,8 @@ foreach who in Adult Child Neonate {
         capture rename `var' ``var'_name'
     }   
 
-    foreach var of varlist word* {
+    cap ds words*
+    foreach var in `r(varlist)' {
         drop `var'
     }
     

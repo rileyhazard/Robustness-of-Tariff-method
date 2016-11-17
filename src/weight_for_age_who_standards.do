@@ -11,15 +11,12 @@ capture restore
 ** local who Child
 
 local who "$who"
-local in_dir "$in_dir"
+local in_dir "$wdir"
 
 local who_standards "J:\Usable\Tools\Child Growth Standards\WHO Child Growth Standards 2006"
 
-local pre_s_vars $pre_s_vars
-if ("$pre_s_vars" == "") local pre_s_vars "J:/Project/VA/Publication/Revised Data/Presymptom Data/VA Final - `who'.dta"
 
-
-use "`pre_s_vars'", clear
+use "$wdir/VA Final - `who'.dta", clear
 
 ** fix missingness coding for weight from medical record
 forvalues i= 1/2 {
@@ -115,4 +112,4 @@ label var s180 "severely underweight"
 label var s181 "underweight"
 
 
-save "$dump/`who'_weightforage.dta", replace
+save "$wdir/dump/`who'_weightforage.dta", replace
