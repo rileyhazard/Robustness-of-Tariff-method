@@ -10,7 +10,6 @@
 ##############################################################
 
 library(tm)
-library(rJava)
 library(foreign)
 library(readstata13)
 
@@ -60,6 +59,12 @@ for (who in c("Neonate", "Child", "Adult")) {
     dict = read.csv(paste(working_dir, "freetext/DICT-5.csv", sep=""), stringsAsFactors=FALSE)
 
     # replace words based on dictionary, but not going to catch everything.  Just stuff by commas, periods, semicolons, and spaces.
+    # TODO: revert package to what was available in Aug 2012.
+    # This currently is not catching keywords followed by dashes and elipsis.
+    # The version of `tm` listed above is under-counting key words adjacent
+    # to these characters. A more complete substitution algorithm would be 
+    # to replace all non-alphanumeric characters with spaces before
+    # substitutions and text mining.
     i=1
     for(i in 1:nrow(dict)) {
         all.txt[,2] = gsub(paste(" ", dict$old[i], " ", sep=""), paste(" ", dict$new[i], " ", sep=""), all.txt[,2], ignore.case = TRUE)
