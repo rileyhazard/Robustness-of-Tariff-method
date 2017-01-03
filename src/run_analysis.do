@@ -34,7 +34,7 @@ cap copy "`old_data_dir'/Revised Data/Splits/dirichlet_draw_21.csv" "$wdir/split
 cap copy "`old_data_dir'/Revised Data/Splits/dirichlet_draw_34.csv" "$wdir/splits/dirichlet_draw_34.csv"
 
 // Free text dictionaries
-cap copy "`old_data_dir'/FreeText/Maps/DICT-5.csv" "$wdir/freetext/DICT-5.csv"
+cap copy "`old_data_dir'/FreeText/Maps/archive/DICT-5_publication.csv" "$wdir/freetext/DICT-5.csv"
 cap copy "`old_data_dir'/FreeText/Maps/dropWords.csv" "$wdir/freetext/dropWords.csv"
 cap copy "`old_data_dir'/FreeText/Maps/keepWords.csv" "$wdir/freetext/keepWords.csv"
 
