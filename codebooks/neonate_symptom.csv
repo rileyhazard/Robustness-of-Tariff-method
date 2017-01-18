@@ -1,4 +1,4 @@
-xs_name,gc13_label,module,type,full,short,hce,default,coding
+variable,question,module,type,full,short,hce,default,coding
 age,Last known age of the deceased [days],neonate,categorical,1,1,0,0,"0 ""No"" 1 ""Yes"""
 sex,What was the sex of the deceased?,neonate,categorical,1,1,0,0,"0 ""No"" 1 ""Yes"""
 s4991,age quartile 1,neonate,categorical,1,1,0,0,"0 ""No"" 1 ""Yes"""
