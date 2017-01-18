@@ -1,0 +1,19 @@
+cause_list:
+  adult:
+    AIDS with TB: AIDS
+    
+    Diabetes with Coma: Diabetes
+    Diabetes with Renal Failure: Diabetes
+    Diabetes with Skin Infection/Sepsis: Diabetes
+    
+    Inflammatory Heart Disease: Other Cardiovascular Diseases
+    Congestive Heart Failure: Other Cardiovascular Diseases
+    
+    Leukemia: Leukemia/Lymphomas
+    Lymphomas: Leukemia/Lymphomas
+    
+    Anemia: Maternal
+    Hemorrhage: Maternal
+    Hypertensive Disorder: Maternal
+    Other Pregnancy-Related Deaths: Maternal
+    Sepsis: Maternal

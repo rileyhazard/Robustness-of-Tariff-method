@@ -1,0 +1,24 @@
+cause_list:
+  adult:
+    AIDS with TB: AIDS
+    
+    Diabetes with Coma: Diabetes
+    Diabetes with Renal Failure: Diabetes
+    Diabetes with Skin Infection/Sepsis: Diabetes
+    
+    Leukemia: Leukemia/Lymphomas
+    Lymphomas: Leukemia/Lymphomas
+    Other Cancers: Other Non-communicable Diseases
+    
+    Anemia: Maternal
+    Hemorrhage: Maternal
+    Hypertensive Disorder: Maternal
+    Other Pregnancy-Related Deaths: Maternal
+    Sepsis: Maternal
+    
+    Asthma: Chronic Respiratory
+    COPD: Chronic Respiratory
+
+    Inflammatory Heart Disease: Other Cardiovascular Diseases
+    Acute Myocardial Infarction: Ischemic Heart Disease
+    Congestive Heart Failure: Ischemic Heart Disease
