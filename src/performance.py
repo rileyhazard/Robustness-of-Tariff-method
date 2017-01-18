@@ -35,7 +35,7 @@ def calc_sensitivity(class_, actual, predicted):
     """
     actual, predicted = safe_align_sequence(actual, predicted)
     true_positive = ((actual == class_) & (predicted == class_)).sum()
-    n_predicted = (predicted == class_).sum()
+    n_predicted = (actual == class_).sum()
     return true_positive / n_predicted if n_predicted else np.nan
 
 
@@ -135,7 +135,7 @@ def calc_ccc(class_, actual, predicted):
     Returns:
         ccc (float): Chance correct concordance
     """
-    sensitivity = calc_sensitivity(actual, predicted)
+    sensitivity = calc_sensitivity(class_, actual, predicted)
     chance = 1 / len(np.unique(actual))
     return (sensitivity - chance) / (1 - chance)
 
