@@ -4,7 +4,7 @@ from getters import (
     get_gold_standard,
     get_codebook,
     get_cause_map,
-    get_custom_cause_map,
+    get_metadata,
     get_smartva_symptoms,
     get_smartva_predictions
 )
@@ -98,8 +98,8 @@ def main(path, outfile=None, cause_list='smartva_text', rules=True):
         if cause_list in ['gs_text34', 'gs_text46', 'smartva_text']:
             cause_map = get_cause_map(module, 'smartva', cause_list)
         else:
-            cause_map = get_custom_cause_map(cause_list)
-            cause_map = cause_map['cause_list'].get(module)
+            # Assume cause_list is a metadata file or set of files
+            cause_map = get_metadata(cause_list, module, 'cause_map')
             if not cause_map:
                 cause_map = get_cause_map(module, 'smartva', 'smartva_text')
         data[module] = get_all_data(path, module, cause_map, rules)

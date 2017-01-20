@@ -39,24 +39,40 @@ def get_cause_map(module, src, target):
     return dict(zip(df[src], df[target]))
 
 
-def get_custom_cause_map(path):
-    with open(path, 'r') as f:
-        cause_map = yaml.load(f)
-    return cause_map
-
-
-def get_metadata(paths):
+def get_metadata(paths, modules=None, keys=None):
     if isinstance(paths, basestring):
         paths = [paths]
 
-    files = []
+    if isinstance(modules, basestring):
+        modules = [modules]
+    elif modules is None:
+        modules = ['adult', 'child', 'neonate']
+
+    if isinstance(keys, basestring):
+        keys = [keys]
+
+    yamls = []
     for path in paths:
         with open(path, 'r') as f:
-            files.append(yaml.load(f))
+            yamls.append(yaml.load(f))
 
-    metadata = dict()
-    for f in files:
-        metadata.update(f)
+    metadata = {module: dict() for module in modules}
+    for yml in yamls:
+        for module in modules:
+            if module not in yml:
+                continue
+            for key in yml[module]:
+                if keys is None or key in keys:
+                    metadata[module].update(yml[module])
+
+    if keys is not None and len(keys) == 1:
+        metadata = {module: metadata[module][keys[0]] for module in modules
+                    if keys[0] in metadata[module]}
+    if len(modules) == 1:
+        if modules[0] in metadata:
+            metadata = metadata[modules[0]]
+        else:
+            metadata = dict()
     return metadata
 
 

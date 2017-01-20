@@ -1,5 +1,5 @@
-cause_list:
-  adult:
+adult:
+  cause_map:
     AIDS with TB: AIDS
     
     Diabetes with Coma: Diabetes
