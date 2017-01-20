@@ -617,3 +617,63 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
         predicted = csmf.drop(np.nan)
         undetermined = proportions * csmf.loc[np.nan]
         return pd.concat([predicted, undetermined]).groupby(level=0).sum()
+
+
+if __name__ == '__main__':
+    import argparse
+    import inspect
+    import os
+
+    from getters import (
+        get_cause_map,
+        get_gold_standard,
+        get_smartva_symptom_file,
+        get_metadata,
+    )
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('dataset', choices=['phmrc', 'nhmrc'])
+    parser.add_argument('module', choices=['adult', 'child', 'neonate'])
+    parser.add_argument('input', help='Directory previous Smartva output')
+    parser.add_argument('output', help='Directory for output predictions')
+    parser.add_argument('--rules', action='store_true',
+                        help='Use rule-based predictions in symptom file')
+    parser.add_argument('-m', '--metadata', action='append',
+                        help='Paths to metadata yaml files')
+    args = parser.parse_args()
+    args.bootstraps = 30
+
+    metadata = get_metadata(args.metadata, args.module)
+
+    df = get_smartva_symptom_file(args.input, args.module)
+    gs = get_gold_standard(args.dataset, args.module)
+
+    matched = df.index.intersection(gs.index)
+    df = df.loc[matched]
+    gs = gs.loc[matched]
+
+    cause_map = metadata.get('cause_map')
+    gs = gs.gs_text46.replace(cause_map)
+
+    non_binary = ['real_age', 'real_gender', 'cause']
+    X = df.drop(non_binary, axis=1).astype(int).fillna(0)
+    ages = df.real_age
+    sexes = df.real_gender
+    if args.rules:
+        va46_to_text46 = get_cause_map(args.module, 'smartva', 'smartva_text')
+        ruled = df.cause.astype(int).replace(va46_to_text46).replace(cause_map)
+    else:
+        ruled = None
+
+    init, _, _, _ = inspect.getargspec(TariffClassifier.__init__)
+    init.remove('self')
+
+    clf = TariffClassifier(**{k: v for k, v in metadata.items() if k in init})
+    clf.fit(X, gs, metadata.get('spurious_associations'))
+    results = clf.predict(X, ages=ages, sexes=sexes, rules=ruled,
+                          restrictions=metadata.get('restrictions'))
+
+    results.name = 'Prediction'
+    results.index.name = 'sid'
+    output_name = '{}-predictions.csv'.format(args.module)
+    results.to_csv(os.path.join(args.output, output_name), header=True)
