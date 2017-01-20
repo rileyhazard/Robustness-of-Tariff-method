@@ -379,7 +379,11 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
         """
         valid = tariffs.copy()
         for cause, associations in spurious.items():
+            if cause not in self.causes_:
+                continue
             for symp in associations:
+                if symp not in self.symptoms_:
+                    continue
                 valid.loc[cause, symp] = 0
         return valid
 
@@ -571,19 +575,24 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
 
         if min_age:
             for threshold, causes in min_age:
+                causes = list(set(causes).intersection(self.causes_))
                 X.loc[ages < threshold, causes] = worst_rank
         if max_age:
             for threshold, causes in max_age:
+                causes = list(set(causes).intersection(self.causes_))
                 X.loc[ages > threshold, causes] = worst_rank
         if males_only:
-            X.loc[sexes == 2, males_only] = worst_rank
+            causes = list(set(males_only).intersection(self.causes_))
+            X.loc[sexes == 2, causes] = worst_rank
         if females_only:
-            X.loc[sexes == 1, females_only] = worst_rank
+            causes = list(set(females_only).intersection(self.causes_))
+            X.loc[sexes == 1, causes] = worst_rank
         if regional:
             X.loc[:, regional] = worst_rank
         if ad_hoc:
             for cause, condition in ad_hoc:
-                X.loc[condition, cause] = worst_rank
+                if cause in self.causes_:
+                    X.loc[condition, cause] = worst_rank
 
         return X
 
