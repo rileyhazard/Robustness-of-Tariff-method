@@ -50,7 +50,7 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
         cutoff_ranks_ (np.array): rank of cutoff values by cause
         cutoff_scores_ (np.array): scores at cutoff values
     """
-    def __init__(self, precision=0.5, bootstraps=500, tariffs_ui=0.95,
+    def __init__(self, precision=0.5, bootstraps=500, tariffs_ui=95,
                  top_n_symptoms=40, min_cause_score=0, cause_pct_cutoff=100,
                  overall_pct_cutoff=100, redistribute=True, random_state=None):
         self.precision = precision
