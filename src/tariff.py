@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+import numexpr as ne
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -280,11 +281,9 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
         Returns:
             series: tariff scores
         """
-        pct25, median, pct75 = series.quantile([.25, .5, .75])
-        iqr = pct75 - pct25
-        if iqr == 0:
-            iqr = 0.001
-        return series.map(lambda x: (x - median) / float(iqr))
+        pct25, median, pct75 = np.percentile(series, [25, 50, 75])
+        iqr = pct75 - pct25 or 0.001
+        return ne.evaluate("(series - median) / iqr")
 
     def calc_insignificant_tariffs(self, X, y, n=500, ui=95,
                                    random_state=None):
@@ -314,21 +313,19 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
         else:
             symptoms = np.arange(X.shape[1])
         X, y = check_X_y(X, y)
-        causes = np.unique(y)
+        if not np.all((X == 1) | (X == 0)):
+            raise ValueError("Not all values of X are binary")
 
-        bootstraps = []
-        for x in range(n):
-            X_new, y_new = [], []
-            for cause in causes:
-                X_new.append(resample(safe_indexing(X, y == cause),
-                                      random_state=random_state))
-                y_new.append(np.full(np.sum(y == cause), cause,
-                                     dtype=np.array(cause).dtype))
-            X_new = np.vstack(X_new)
-            y_new = np.concatenate(y_new)
-            tariffs = self.calc_tariffs(X_new, y_new)
-            # Stack np.arrays instead of dataframes to apply along a third
-            # dimension
+        causes, counts = np.unique(y, return_counts=True)
+        y_new = np.repeat(causes, counts)
+        mask = {cause: y == cause for cause in causes}
+
+        bootstraps = list()
+        for _ in range(n):
+            X_new = np.vstack([resample(X.compress(mask[cause], 0))
+                               for cause in causes])
+            tariffs = pd.DataFrame(X_new).groupby(y_new).mean() \
+                        .apply(self.tariff_from_endorsements, raw=True)
             bootstraps.append(tariffs.values)
 
         insig = np.apply_along_axis(self._is_uncertain, 2,
@@ -641,7 +638,6 @@ if __name__ == '__main__':
     parser.add_argument('-m', '--metadata', action='append',
                         help='Paths to metadata yaml files')
     args = parser.parse_args()
-    args.bootstraps = 30
 
     metadata = get_metadata(args.metadata, args.module)
 
@@ -669,6 +665,7 @@ if __name__ == '__main__':
     init.remove('self')
 
     clf = TariffClassifier(**{k: v for k, v in metadata.items() if k in init})
+    print clf
     clf.fit(X, gs, metadata.get('spurious_associations'))
     results = clf.predict(X, ages=ages, sexes=sexes, rules=ruled,
                           restrictions=metadata.get('restrictions'))
