@@ -198,6 +198,9 @@ def calc_csmf_accuracy(actual, predicted):
     actual, predicted = safe_align_sequence(actual, predicted)
     csmf_pred = pd.Series(predicted).value_counts() / float(len(predicted))
     csmf_true = pd.Series(actual).value_counts() / float(len(actual))
+
+    # Drop causes in the prediction which do not appear in the actual
+    csmf_pred = csmf_pred.loc[csmf_true.index].fillna(0)
     return calc_csmf_accuracy_from_csmf(csmf_true, csmf_pred)
 
 
@@ -238,5 +241,5 @@ def calc_cccsmf_accuracy_from_csmf(actual, predicted):
     Returns:
         float
     """
-    csmf = calc_cccsmf_accuracy_from_csmf(actual, predicted)
+    csmf = calc_csmf_accuracy_from_csmf(actual, predicted)
     return correct_csmf_accuracy(csmf)
