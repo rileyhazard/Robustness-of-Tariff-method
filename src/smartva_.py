@@ -75,6 +75,7 @@ class SmartvaClassifier(tariff.TariffClassifier):
         self.overall_pct_cutoff = tariff_data.UNIFORM_LIST_POS * 100
 
         tariffs = load_smartva_tariff_matrix(self.path, self.module)
+        self.causes_ = tariffs.index.values
         tariffs = self.process_smartva_tariffs(tariffs, tariff_data)
 
         validated = load_smartva_validated_data(self.path, self.module)
@@ -82,7 +83,6 @@ class SmartvaClassifier(tariff.TariffClassifier):
         X_uniform, y_uniform, cutoff_scores, cutoff_ranks = trained
 
         self.tariffs_ = tariffs
-        self.causes_ = tariffs.index.values
         self.n_causes_ = len(self.causes_)
         self.symptoms_ = tariffs.columns.values
         self.X_uniform_ = X_uniform
