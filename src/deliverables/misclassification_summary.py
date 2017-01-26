@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 from getters import (
     get_gold_standard,
@@ -23,12 +24,13 @@ def get_endorsements(module, symptoms, gold_standard):
     df = df.loc[:, df.sum() > 0].T
     col_order = ['description'] + df.columns.tolist()
     df['description'] = df.index.to_series().map(codebook.question)
-    df = df.loc[:, col_order]
+    row_order = [q for q in codebook.index if q in df.index]
+    df = df.loc[row_order, col_order]
 
     return df
 
 
-def get_misclassification(gold_standard, prediction, gs_name=None):
+def get_misclassification(gold_standard, prediction):
     df = pd.crosstab(gold_standard, prediction)
     df.index.name = None
     df.columns.name = None
@@ -43,7 +45,7 @@ def get_misclassification(gold_standard, prediction, gs_name=None):
     return df
 
 
-def get_classification_statistics(gold_standard, prediction, gs_name=None):
+def get_classification_statistics(gold_standard, prediction):
     causes = gold_standard.unique()
     stats = ['CCC', 'PPV', 'NPV', 'Sensitivity', 'Specificity', 'Accuracy']
     df = []
@@ -60,6 +62,19 @@ def get_classification_statistics(gold_standard, prediction, gs_name=None):
     df = pd.DataFrame(df, index=causes, columns=stats)
     df = df.sort_index()
     return df
+
+
+def get_overall_statistics(gold_standard, prediction):
+    stats = ['CSMF Accuracy', 'CCCSMF Accuracy', 'Median CCC', 'Mean CCC']
+    ccc = [perf.calc_ccc(cause, gold_standard, prediction)
+           for cause in np.unique(gold_standard)]
+    csmf = perf.calc_csmf_accuracy(gold_standard, prediction)
+    return pd.Series([
+        csmf,
+        perf.correct_csmf_accuracy(csmf),
+        np.median(ccc),
+        np.mean(ccc),
+    ], index=stats)
 
 
 def get_all_data(path, module, cause_map, rules):
@@ -82,13 +97,19 @@ def get_all_data(path, module, cause_map, rules):
 
     endorsements = get_endorsements(module, symptoms, gold_standard)
     misclassification = get_misclassification(gold_standard, prediction)
-    stats = get_classification_statistics(gold_standard, prediction)
+    stats_by_cause = get_classification_statistics(gold_standard, prediction)
+    overall_stats = get_overall_statistics(gold_standard, prediction)
 
-    col_order = ['Module'] + stats.columns.tolist()
-    stats['Module'] = module.title()
-    stats = stats.loc[:, col_order]
+    col_order = ['Module'] + stats_by_cause.columns.tolist()
+    stats_by_cause['Module'] = module.title()
+    stats_by_cause = stats_by_cause.loc[:, col_order]
 
-    return gold_standard, prediction, endorsements, misclassification, stats
+    idx_order = ['Module'] + overall_stats.index.tolist()
+    overall_stats['Module'] = module.title()
+    overall_stats = overall_stats.loc[idx_order]
+
+    return (gold_standard, prediction, endorsements, misclassification,
+            stats_by_cause, overall_stats)
 
 
 def main(path, outfile=None, cause_list='smartva_text', rules=True):
@@ -104,7 +125,11 @@ def main(path, outfile=None, cause_list='smartva_text', rules=True):
                 cause_map = get_cause_map(module, 'smartva', 'smartva_text')
         data[module] = get_all_data(path, module, cause_map, rules)
 
-    stats = pd.concat([data[module][4] for module in modules])
+    stats_by_cause = pd.concat([data[module][4] for module in modules])
+    overall_stats = pd.concat([data[module][5] for module in modules], axis=1)
+
+    spurious_associations = get_metadata('data/smartva_spurious.yml',
+                                         keys='spurious_associations')
 
     if outfile:
         # Pandas set cell style on header cells which cannot be overwritten
@@ -118,16 +143,37 @@ def main(path, outfile=None, cause_list='smartva_text', rules=True):
         pct_fmt = workbook.add_format({'num_format': '0.0%'})
         header_fmt = workbook.add_format({'rotation': 60, 'bold': True})
         bold_fmt = workbook.add_format({'bold': True})
+        outlier_fmt = workbook.add_format({'bg_color': '#FF8080'})
+        outlier_cond = {
+            'type': 'cell',
+            'criteria': 'greater than',
+            'value': 9,
+            'format': outlier_fmt,
+        }
+        spur_fmt = workbook.add_format({'num_format': '0.0%',
+                                        'bg_color': '#A6BDDB'})
 
-        sheet_name = 'Stats by Cause'
-        stats.to_excel(writer, sheet_name=sheet_name, index_label='Cause')
+        sheet_name = 'Overall Stats'
+        overall_stats.T.to_excel(writer, sheet_name=sheet_name, index=False)
         sheet = writer.sheets[sheet_name]
         sheet.set_row(0, None, bold_fmt)
-        sheet.autofilter(0, 0, stats.index.shape[0], stats.columns.shape[0])
+        sheet.autofilter(0, 0, overall_stats.index.shape[0],
+                         overall_stats.columns.shape[0])
+        sheet.freeze_panes(1, 0)
+        sheet.set_column(0, 0, 9.43)    # Module
+        sheet.set_column(1, stats_by_cause.columns.shape[0], 11.86, pct_fmt)
+
+        sheet_name = 'Stats by Cause'
+        stats_by_cause.to_excel(writer, sheet_name=sheet_name,
+                                index_label='Cause')
+        sheet = writer.sheets[sheet_name]
+        sheet.set_row(0, None, bold_fmt)
+        sheet.autofilter(0, 0, stats_by_cause.index.shape[0],
+                         stats_by_cause.columns.shape[0])
         sheet.freeze_panes(1, 0)
         sheet.set_column(0, 0, 37.14)   # Cause
         sheet.set_column(1, 1, 9.43)    # Module
-        sheet.set_column(2, stats.columns.shape[0], 11.86, pct_fmt)   # Stats
+        sheet.set_column(2, stats_by_cause.columns.shape[0], 11.86, pct_fmt)
 
         for module in modules:
             df = data[module][3]
@@ -135,17 +181,30 @@ def main(path, outfile=None, cause_list='smartva_text', rules=True):
             df.to_excel(writer, sheet_name=sheet_name)
             sheet = writer.sheets[sheet_name]
 
-            sheet.autofilter(0, 0, df.index.shape[0], df.columns.shape[0])
+            last_row, last_col = df.index.shape[0], df.columns.shape[0]
+            sheet.autofilter(0, 0, last_row, last_col)
             sheet.freeze_panes(1, 1)
             sheet.set_column(0, 0, 33)   # GS Cause
-            sheet.set_column(1, df.columns.shape[0], 4.43)   # Counts
+            sheet.set_column(1, last_col, 4.43)   # Counts
             sheet.set_row(0, None, header_fmt)
             sheet.write(0, 0, 'Gold Standard', bold_fmt)
+            sheet.conditional_format(1, 1, last_row, last_col, outlier_cond)
 
             df = data[module][2]
             sheet_name = '{} Endorsements'.format(module.title())
             df.to_excel(writer, sheet_name=sheet_name)
             sheet = writer.sheets[sheet_name]
+
+            for cause, spurious in spurious_associations[module].items():
+                if cause not in df.columns:
+                    continue
+                cause_index = df.columns.get_loc(cause) + 1
+                for spur in spurious:
+                    if spur not in df.index:
+                        continue
+                    symptom_index = df.index.get_loc(spur) + 1
+                    val = df.loc[spur, cause]
+                    sheet.write(symptom_index, cause_index, val, spur_fmt)
 
             sheet.autofilter(0, 0, df.index.shape[0], df.columns.shape[0])
             sheet.freeze_panes(1, 2)
@@ -159,7 +218,8 @@ def main(path, outfile=None, cause_list='smartva_text', rules=True):
         writer.save()
 
     return (
-        stats,
+        overall_stats,
+        stats_by_cause,
         data['adult'][3],
         data['adult'][2],
         data['child'][3],
