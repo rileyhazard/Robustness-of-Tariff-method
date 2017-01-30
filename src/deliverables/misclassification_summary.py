@@ -77,9 +77,9 @@ def get_overall_statistics(gold_standard, prediction):
     ], index=stats)
 
 
-def get_all_data(path, module, cause_map, rules):
+def get_all_data(path, module, dataset, cause_map, rules):
     va46_text46 = get_cause_map(module, 'smartva', 'smartva_text')
-    gold_standard = get_gold_standard('phmrc', module)
+    gold_standard = get_gold_standard(dataset, module)
     gold_standard = gold_standard.gs_text46.replace(cause_map)
     prediction = get_smartva_predictions(path, module, rules, va46_text46)
     prediction = prediction.replace(cause_map)
@@ -112,18 +112,20 @@ def get_all_data(path, module, cause_map, rules):
             stats_by_cause, overall_stats)
 
 
-def main(path, outfile=None, cause_list='smartva_text', rules=True):
+def main(path, dataset, outfile=None, cause_list='smartva_reporting',
+         rules=True):
     modules = ['adult', 'child', 'neonate']
     data = dict()
     for module in modules:
-        if cause_list in ['gs_text34', 'gs_text46', 'smartva_text']:
-            cause_map = get_cause_map(module, 'smartva', cause_list)
+        if cause_list in ['gs_text34', 'gs_text46', 'smartva_text',
+                          'smartva_reporting']:
+            cause_map = get_cause_map(module, 'smartva_text', cause_list)
         else:
             # Assume cause_list is a metadata file or set of files
             cause_map = get_metadata(cause_list, module, 'cause_map')
             if not cause_map:
-                cause_map = get_cause_map(module, 'smartva', 'smartva_text')
-        data[module] = get_all_data(path, module, cause_map, rules)
+                cause_map = get_cause_map(module, 'smartva_text', cause_list)
+        data[module] = get_all_data(path, module, dataset, cause_map, rules)
 
     stats_by_cause = pd.concat([data[module][4] for module in modules])
     overall_stats = pd.concat([data[module][5] for module in modules], axis=1)
@@ -239,7 +241,10 @@ if __name__ == '__main__':
                                      "Smartva output")
     parser.add_argument('input', help='Path to SmartVA output')
     parser.add_argument('output', help='Filename of output xlsx')
-    parser.add_argument('-c', '--cause-list', default='smartva_text',
+    parser.add_argument('-d', '--dataset', default='phmrc',
+                        choices=['phmrc', 'nhmrc'],
+                        help='Filename of output xlsx')
+    parser.add_argument('-c', '--cause-list', default='smartva_reporting',
                         help='Either a column in the cause map or a path to a '
                              'yaml file with a cause mapping dict')
     parser.add_argument('--no-rules', action='store_false', dest='rules')
@@ -249,4 +254,4 @@ if __name__ == '__main__':
         args.output += '.xlsx'
     outfile = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                            '..', '..', 'external', args.output)
-    main(args.input, outfile, args.cause_list, args.rules)
+    main(args.input, args.dataset, outfile, args.cause_list, args.rules)
