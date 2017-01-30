@@ -60,9 +60,10 @@ RESTRICTIONS = {
 
 
 class SmartvaClassifier(tariff.TariffClassifier):
-    def __init__(self, path, module):
+    def __init__(self, path, module, short=False):
         self.path = path
         self.module = module
+        self.short = short
 
         self.precision = 0.5
         self.top_n_symptoms = 40
@@ -98,6 +99,11 @@ class SmartvaClassifier(tariff.TariffClassifier):
 
         spurious = {va46_to_text46[k]: v
                     for k, v in tariff_data.SPURIOUS_ASSOCIATIONS.items()}
+
+        if self.short:
+            short_drop = tariff_data.SHORT_FORM_DROP_LIST
+            drop_cols = tariffs.columns.intersection(short_drop)
+            tariffs = tariffs.drop(drop_cols, axis=1)
 
         if spurious:
             tariffs = self.remove_spurious_associations(tariffs, spurious)
