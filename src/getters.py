@@ -29,6 +29,8 @@ def get_gold_standard(dataset, module=None):
 
 
 def get_codebook(codebook):
+    if not codebook.endswith('.csv'):
+        codebook = '{}.csv'.format(codebook)
     return pd.read_csv(os.path.join(REPO_DIR, 'codebooks', codebook),
                        index_col=0)
 
@@ -66,8 +68,8 @@ def get_metadata(paths, modules=None, keys=None):
                     metadata[module].update(yml[module])
 
     if keys is not None and len(keys) == 1:
-        metadata = {module: metadata[module][keys[0]] for module in modules
-                    if keys[0] in metadata[module]}
+        metadata = {module: metadata[module].get(keys[0], {})
+                    for module in modules}
     if len(modules) == 1:
         if modules[0] in metadata:
             metadata = metadata[modules[0]]
@@ -121,12 +123,15 @@ def get_smartva_predictions(path, module, rules=True, cause_map=None):
 def get_smartva_symptoms(path, module):
     symptoms = get_smartva_symptom_file(path, module)
     non_binary_cols = ['cause', 'real_age', 'real_gender']
+    non_binary_cols = symptoms.columns.intersection(non_binary_cols)
     return symptoms.drop(non_binary_cols, axis=1).fillna(0).astype(int)
 
 
 def load_smartva_tariff_data(path, module):
     if module not in ['adult', 'child', 'neonate']:
         raise ValueError('Unknown module: "{}"'.format(module))
+    if not os.path.exists(path):
+        raise ValueError('Path not found: "{}"'.format(path))
 
     sys.path.insert(0, path)
     if module == 'adult':
