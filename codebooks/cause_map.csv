@@ -1,98 +1,98 @@
-module,gs_code55,gs_code46,gs_code34,gs_text55,gs_text46,gs_text34,va55,va46,va34,smartva,smartva_text
-adult,,,,Undetermined,Undetermined,Undetermined,0,0,0,0,Undetermined
-adult,B20,B20,B20,AIDS,AIDS,AIDS,4,1,1,1,AIDS
-adult,C30,C30,B20,AIDS with TB,AIDS with TB,AIDS,8,2,1,2,AIDS with TB
-adult,J45,J45,J45,Asthma,Asthma,Asthma,27,4,2,4,Asthma
-adult,X20,X20,X20,Bite of Venomous Animal,Bite of Venomous Animal,Bite of Venomous Animal,44,5,3,5,Bite of Venomous Animal
-adult,C50,C50,C50,Breast Cancer,Breast Cancer,Breast Cancer,10,6,4,6,Breast Cancer
-adult,D05,D05,D05,Cervical Cancer,Cervical Cancer,Cervical Cancer,12,7,5,7,Cervical Cancer
-adult,K71,K71,K71,Cirrhosis,Cirrhosis,Cirrhosis,29,8,6,8,Cirrhosis
-adult,G18,G18,G18,Colorectal Cancer,Colorectal Cancer,Colorectal Cancer,17,9,7,9,Colorectal Cancer
-adult,J33,J33,J33,COPD,COPD,COPD,26,10,8,10,COPD
-adult,E11,E11,E10,Diabetes with Coma,Diabetes with Coma,Diabetes,14,11,9,11,Diabetes with Coma
-adult,M14,M14,E10,Diabetes with Renal Failure,Diabetes with Renal Failure,Diabetes,30,12,9,12,Diabetes with Renal Failure
-adult,Q10,Q10,E10,Diabetes with Skin Infection/Sepsis,Diabetes with Skin Infection/Sepsis,Diabetes,35,13,9,13,Diabetes with Skin Infection/Sepsis
-adult,A09,A09,A09,Diarrhea/Dysentery,Diarrhea/Dysentery,Diarrhea/Dysentery,1,14,10,14,Diarrhea/Dysentery
-adult,W65,W65,W65,Drowning,Drowning,Drowning,42,15,11,15,Drowning
-adult,G40,G40,G40,Epilepsy,Epilepsy,Epilepsy,18,16,12,16,Epilepsy
-adult,C15,C15,C15,Esophageal Cancer,Esophageal Cancer,Esophageal Cancer,7,17,13,17,Esophageal Cancer
-adult,W00,W00,W00,Falls,Falls,Falls,40,18,14,18,Falls
-adult,X09,X09,X09,Fires,Fires,Fires,43,19,15,19,Fires
-adult,Y00,Y00,Y00,Homicide,Homicide,Homicide,46,21,16,21,Homicide
-adult,I21,I21,I21,Acute Myocardial Infarction,Acute Myocardial Infarction,Acute Myocardial Infarction,22,23,17,23,Acute Myocardial Infarction
-adult,D91,D91,D91,Leukemia,Leukemia,Leukemia/Lymphomas,13,26,18,26,Leukemia
-adult,G96,G96,D91,Lymphomas,Lymphomas,Leukemia/Lymphomas,19,28,18,28,Lymphomas
-adult,C34,C34,C34,Lung Cancer,Lung Cancer,Lung Cancer,9,27,19,27,Lung Cancer
-adult,B54,B54,B54,Malaria,Malaria,Malaria,5,29,20,29,Malaria
-adult,H11,H11,O67,Hypertensive Disorder,Hypertensive Disorder,Maternal,20,22,21,22,Hypertensive Disorder
-adult,O64,ZZ26,O67,Obstructed Labor,Other Pregnancy-Related Deaths,Maternal,33,36,21,36,Other Pregnancy-Related Deaths
-adult,O67,O67,O67,Hemorrhage,Hemorrhage,Maternal,34,20,21,20,Hemorrhage
-adult,S85,S85,O67,Sepsis,Sepsis,Maternal,36,42,21,42,Sepsis
-adult,W15,W15,O67,Anemia,Anemia,Maternal,41,3,21,3,Anemia
-adult,ZZ26,ZZ26,O67,Other Pregnancy-Related Deaths,Other Pregnancy-Related Deaths,Maternal,52,36,21,36,Other Pregnancy-Related Deaths
-adult,I52,I52,ZZ23,Inflammatory Heart Disease,Inflammatory Heart Disease,Other Cardiovascular Diseases,23,25,22,25,Inflammatory Heart Disease
-adult,T50,T50,ZZ23,Congestive Heart Failure,Congestive Heart Failure,Other Cardiovascular Diseases,38,24,22,24,Congestive Heart Failure
-adult,ZZ23,ZZ23,ZZ23,Other Cardiovascular Diseases,Other Cardiovascular Diseases,Other Cardiovascular Diseases,49,31,22,31,Other Cardiovascular Diseases
-adult,N77,ZZ21,ZZ21,Pelvic Inflammatory Disease,Other Infectious Diseases,Other Infectious Diseases,32,33,23,33,Other Infectious Diseases
-adult,ZZ21,ZZ21,ZZ21,Other Infectious Diseases,Other Infectious Diseases,Other Infectious Diseases,47,33,23,33,Other Infectious Diseases
-adult,ZZ27,ZZ27,ZZ27,Other Injuries,Other Injuries,Other Injuries,53,34,24,34,Other Injuries
-adult,C13,ZZ22,ZZ25,Mouth/ Orapharynx Cancer,Other Cancers,Other Non-communicable Diseases,6,30,25,30,Other Cancers
-adult,C55,ZZ22,ZZ25,Uterine Cancer,Other Cancers,Other Non-communicable Diseases,11,30,25,30,Other Cancers
-adult,F03,ZZ25,ZZ25,Dementia,Other Non-communicable Diseases,Other Non-communicable Diseases,15,35,25,35,Other Non-communicable Diseases
-adult,F56,ZZ22,ZZ25,Ovarian Cancer,Other Cancers,Other Non-communicable Diseases,16,30,25,30,Other Cancers
-adult,K22,ZZ22,ZZ25,Liver Cancer,Other Cancers,Other Non-communicable Diseases,28,30,25,30,Other Cancers
-adult,ZZ22,ZZ22,ZZ25,Other Cancers,Other Cancers,Other Non-communicable Diseases,48,30,25,30,Other Cancers
-adult,ZZ24,ZZ24,ZZ25,Other Digestive Diseases,Other Digestive Diseases,Other Non-communicable Diseases,50,32,25,32,Other Digestive Diseases
-adult,ZZ25,ZZ25,ZZ25,Other Non-communicable Diseases,Other Non-communicable Diseases,Other Non-communicable Diseases,51,35,25,35,Other Non-communicable Diseases
-adult,J12,J12,J12,Pneumonia,Pneumonia,Pneumonia,25,37,26,37,Pneumonia
-adult,T36,T36,T36,Poisonings,Poisonings,Poisonings,37,38,27,38,Poisonings
-adult,H61,H61,H61,Prostate Cancer,Prostate Cancer,Prostate Cancer,21,39,28,39,Prostate Cancer
-adult,N17,N17,N17,Renal Failure,Renal Failure,Renal Failure,31,40,29,40,Renal Failure
-adult,V99,V99,V99,Road Traffic,Road Traffic,Road Traffic,39,41,30,41,Road Traffic
-adult,A16,A16,A16,Stomach Cancer,Stomach Cancer,Stomach Cancer,3,43,31,43,Stomach Cancer
-adult,I64,I64,I64,Stroke,Stroke,Stroke,24,44,32,44,Stroke
-adult,X70,X70,X70,Suicide,Suicide,Suicide,45,45,33,45,Suicide
-adult,A15,A15,A15,TB,TB,TB,2,46,34,46,TB
-child,,,,Undetermined,Undetermined,Undetermined,0,0,0,0,Undetermined
-child,B20,B20,B20,AIDS,AIDS,AIDS,7,1,1,1,AIDS
-child,C30,B20,B20,AIDS with TB,AIDS,AIDS,9,1,1,1,AIDS
-child,X20,X20,X20,Bite of Venomous Animal,Bite of Venomous Animal,Bite of Venomous Animal,19,2,2,2,Bite of Venomous Animal
-child,A09,A09,A09,Diarrhea/Dysentery,Diarrhea/Dysentery,Diarrhea/Dysentery,1,3,3,3,Diarrhea/Dysentery
-child,W65,W65,W65,Drowning,Drowning,Drowning,17,4,4,4,Drowning
-child,A83,A83,A83,Encephalitis,Encephalitis,Encephalitis,4,5,5,5,Encephalitis
-child,W00,W00,W00,Falls,Falls,Falls,16,6,6,6,Falls
-child,X09,X09,X09,Fires,Fires,Fires,18,7,7,7,Fires
-child,A91,A91,A91,Hemorrhagic fever,Hemorrhagic fever,Hemorrhagic fever,5,8,8,8,Hemorrhagic fever
-child,B54,B54,B54,Malaria,Malaria,Malaria,8,9,9,9,Malaria
-child,B05,B05,B05,Measles,Measles,Measles,6,10,10,10,Measles
-child,A39,A39,A39,Meningitis,Meningitis,Meningitis,3,11,11,11,Meningitis
-child,ZZ12,ZZ12,ZZ12,Other Cancers,Other Cancers,Other Cancers,22,12,12,12,Other Cancers
-child,ZZ13,ZZ13,ZZ13,Other Cardiovascular Diseases,Other Cardiovascular Diseases,Other Cardiovascular Diseases,23,13,13,13,Other Cardiovascular Diseases
-child,ZZ14,ZZ16,ZZ16,Other Respiratory Diseases,Other Defined Causes of Child Deaths,Other Defined Causes of Child Deaths,24,14,14,14,Other Defined Causes of Child Deaths
-child,ZZ16,ZZ16,ZZ16,Other Defined Causes of Child Deaths,Other Defined Causes of Child Deaths,Other Defined Causes of Child Deaths,26,14,14,14,Other Defined Causes of Child Deaths
-child,ZZ15,ZZ15,ZZ15,Other Digestive Diseases,Other Digestive Diseases,Other Digestive Diseases,25,15,15,15,Other Digestive Diseases
-child,A15,ZZ11,ZZ11,TB,Other Infectious Diseases,Other Infectious Diseases,2,16,16,16,Other Infectious Diseases
-child,ZZ11,ZZ11,ZZ11,Other Infectious Diseases,Other Infectious Diseases,Other Infectious Diseases,21,16,16,16,Other Infectious Diseases
-child,J12,J12,J12,Pneumonia,Pneumonia,Pneumonia,10,17,17,17,Pneumonia
-child,P3531,J12,J12,Pneumonia and Diarrhea,Pneumonia,Pneumonia,11,17,17,17,Pneumonia
-child,T36,T36,T36,Poisonings,Poisonings,Poisonings,14,18,18,18,Poisonings
-child,V99,V99,V99,Road Traffic,Road Traffic,Road Traffic,15,19,19,19,Road Traffic
-child,R20,R20,R20,Sepsis (with local bacterial infection),Sepsis,Sepsis,12,20,20,20,Sepsis
-child,S30,R20,R20,Sepsis (without local bacterial infection),Sepsis,Sepsis,13,20,20,20,Sepsis
-child,Y05,Y05,Y05,Violent Death,Violent Death,Violent Death,20,21,21,21,Violent Death
-child,,,,Protein-energy malnutrition,Protein-energy malnutrition,Protein-energy malnutrition,27,22,22,22,Protein-energy malnutrition
-neonate,,,,Undetermined,Undetermined,Undetermined,0,0,0,0,Undetermined
-neonate,P21,P21,P21,Birth asphyxia,Birth asphyxia,Birth asphyxia,7,1,1,1,Birth asphyxia
-neonate,Q00,Q00,Q00,Congenital malformation,Congenital malformation,Congenital malformation,12,2,2,2,Congenital malformation
-neonate,P351,P351,P351,Sepsis (Serious Infection),Meningitis/Sepsis,Meningitis/Sepsis,8,3,3,3,Meningitis/Sepsis
-neonate,P352,P351,P351,Meningitis (Serious Infection),Meningitis/Sepsis,Meningitis/Sepsis,9,3,3,3,Meningitis/Sepsis
-neonate,P354,P354,P351,Sepsis with Local Bacterial Infection,Sepsis with Local Bacterial Infection,Meningitis/Sepsis,11,10,3,3,Meningitis/Sepsis
-neonate,P353,P353,P353,Pneumonia (Serious Infection),Pneumonia,Pneumonia,10,4,4,4,Pneumonia
-neonate,O601,O601,O601,Preterm Delivery (<33 weeks GA) without Respiratory Distress Syndrome,Preterm Delivery without Respiratory Distress Syndrome,Preterm Delivery,1,9,5,5,Preterm Delivery
-neonate,O6011,O6011,O601,Preterm Delivery (without RDS) and Birth Asphyxia,Preterm Delivery (without RDS) and Birth Asphyxia,Preterm Delivery,2,6,5,5,Preterm Delivery
-neonate,O6012,O6012,O601,Preterm Delivery (with or without RDS) and Sepsis,Preterm Delivery (with or without RDS) and Sepsis,Preterm Delivery,3,5,5,5,Preterm Delivery
-neonate,O6013,O6013,O601,Preterm Delivery (without RDS) and Sepsis and Birth Asphyxia,Preterm Delivery (without RDS) and Sepsis and Birth Asphyxia,Preterm Delivery,4,7,5,5,Preterm Delivery
-neonate,O602,O602,O601,Respiratory distress syndrome (<33 wks GA),Preterm Delivery with Respiratory Distress Syndrome,Preterm Delivery,5,8,5,5,Preterm Delivery
-neonate,O603,O602,O601,Respiratory distress syndrome (33-36 wks GA),Preterm Delivery with Respiratory Distress Syndrome,Preterm Delivery,6,8,5,5,Preterm Delivery
-neonate,Z37,Z37,Z37,Stillbirth,Stillbirth,Stillbirth,13,11,6,6,Stillbirth
-neonate,,,,Neonatal tetanus,Neonatal tetanus,Neonatal tetanus,14,12,7,7,Neonatal tetanus
+module,gs_code55,gs_code46,gs_code34,gs_text55,gs_text46,gs_text34,va55,va46,va34,smartva,smartva_text,smartva_reporting
+adult,,,,Undetermined,Undetermined,Undetermined,0,0,0,0,Undetermined,Undetermined
+adult,B20,B20,B20,AIDS,AIDS,AIDS,4,1,1,1,AIDS,AIDS
+adult,C30,C30,B20,AIDS with TB,AIDS with TB,AIDS,8,2,1,2,AIDS with TB,AIDS
+adult,J45,J45,J45,Asthma,Asthma,Asthma,27,4,2,4,Asthma,Chronic Respiratory
+adult,X20,X20,X20,Bite of Venomous Animal,Bite of Venomous Animal,Bite of Venomous Animal,44,5,3,5,Bite of Venomous Animal,Bite of Venomous Animal
+adult,C50,C50,C50,Breast Cancer,Breast Cancer,Breast Cancer,10,6,4,6,Breast Cancer,Breast Cancer
+adult,D05,D05,D05,Cervical Cancer,Cervical Cancer,Cervical Cancer,12,7,5,7,Cervical Cancer,Cervical Cancer
+adult,K71,K71,K71,Cirrhosis,Cirrhosis,Cirrhosis,29,8,6,8,Cirrhosis,Cirrhosis
+adult,G18,G18,G18,Colorectal Cancer,Colorectal Cancer,Colorectal Cancer,17,9,7,9,Colorectal Cancer,Colorectal Cancer
+adult,J33,J33,J33,COPD,COPD,COPD,26,10,8,10,COPD,Chronic Respiratory
+adult,E11,E11,E10,Diabetes with Coma,Diabetes with Coma,Diabetes,14,11,9,11,Diabetes with Coma,Diabetes
+adult,M14,M14,E10,Diabetes with Renal Failure,Diabetes with Renal Failure,Diabetes,30,12,9,12,Diabetes with Renal Failure,Diabetes
+adult,Q10,Q10,E10,Diabetes with Skin Infection/Sepsis,Diabetes with Skin Infection/Sepsis,Diabetes,35,13,9,13,Diabetes with Skin Infection/Sepsis,Diabetes
+adult,A09,A09,A09,Diarrhea/Dysentery,Diarrhea/Dysentery,Diarrhea/Dysentery,1,14,10,14,Diarrhea/Dysentery,Diarrhea/Dysentery
+adult,W65,W65,W65,Drowning,Drowning,Drowning,42,15,11,15,Drowning,Drowning
+adult,G40,G40,G40,Epilepsy,Epilepsy,Epilepsy,18,16,12,16,Epilepsy,Epilepsy
+adult,C15,C15,C15,Esophageal Cancer,Esophageal Cancer,Esophageal Cancer,7,17,13,17,Esophageal Cancer,Esophageal Cancer
+adult,W00,W00,W00,Falls,Falls,Falls,40,18,14,18,Falls,Falls
+adult,X09,X09,X09,Fires,Fires,Fires,43,19,15,19,Fires,Fires
+adult,Y00,Y00,Y00,Homicide,Homicide,Homicide,46,21,16,21,Homicide,Homicide
+adult,I21,I21,I21,Acute Myocardial Infarction,Acute Myocardial Infarction,Acute Myocardial Infarction,22,23,17,23,Acute Myocardial Infarction,Ischemic Heart Disease
+adult,D91,D91,D91,Leukemia,Leukemia,Leukemia/Lymphomas,13,26,18,26,Leukemia,Leukemia/Lymphomas
+adult,G96,G96,D91,Lymphomas,Lymphomas,Leukemia/Lymphomas,19,28,18,28,Lymphomas,Leukemia/Lymphomas
+adult,C34,C34,C34,Lung Cancer,Lung Cancer,Lung Cancer,9,27,19,27,Lung Cancer,Lung Cancer
+adult,B54,B54,B54,Malaria,Malaria,Malaria,5,29,20,29,Malaria,Malaria
+adult,H11,H11,O67,Hypertensive Disorder,Hypertensive Disorder,Maternal,20,22,21,22,Hypertensive Disorder,Maternal
+adult,O64,ZZ26,O67,Obstructed Labor,Other Pregnancy-Related Deaths,Maternal,33,36,21,36,Other Pregnancy-Related Deaths,Maternal
+adult,O67,O67,O67,Hemorrhage,Hemorrhage,Maternal,34,20,21,20,Hemorrhage,Maternal
+adult,S85,S85,O67,Sepsis,Sepsis,Maternal,36,42,21,42,Sepsis,Maternal
+adult,W15,W15,O67,Anemia,Anemia,Maternal,41,3,21,3,Anemia,Maternal
+adult,ZZ26,ZZ26,O67,Other Pregnancy-Related Deaths,Other Pregnancy-Related Deaths,Maternal,52,36,21,36,Other Pregnancy-Related Deaths,Maternal
+adult,I52,I52,ZZ23,Inflammatory Heart Disease,Inflammatory Heart Disease,Other Cardiovascular Diseases,23,25,22,25,Inflammatory Heart Disease,Other Cardiovascular Diseases
+adult,T50,T50,ZZ23,Congestive Heart Failure,Congestive Heart Failure,Other Cardiovascular Diseases,38,24,22,24,Congestive Heart Failure,Ischemic Heart Disease
+adult,ZZ23,ZZ23,ZZ23,Other Cardiovascular Diseases,Other Cardiovascular Diseases,Other Cardiovascular Diseases,49,31,22,31,Other Cardiovascular Diseases,Other Cardiovascular Diseases
+adult,N77,ZZ21,ZZ21,Pelvic Inflammatory Disease,Other Infectious Diseases,Other Infectious Diseases,32,33,23,33,Other Infectious Diseases,Other Infectious Diseases
+adult,ZZ21,ZZ21,ZZ21,Other Infectious Diseases,Other Infectious Diseases,Other Infectious Diseases,47,33,23,33,Other Infectious Diseases,Other Infectious Diseases
+adult,ZZ27,ZZ27,ZZ27,Other Injuries,Other Injuries,Other Injuries,53,34,24,34,Other Injuries,Other Injuries
+adult,C13,ZZ22,ZZ25,Mouth/ Orapharynx Cancer,Other Cancers,Other Non-communicable Diseases,6,30,25,30,Other Cancers,Other Non-communicable Diseases
+adult,C55,ZZ22,ZZ25,Uterine Cancer,Other Cancers,Other Non-communicable Diseases,11,30,25,30,Other Cancers,Other Non-communicable Diseases
+adult,F03,ZZ25,ZZ25,Dementia,Other Non-communicable Diseases,Other Non-communicable Diseases,15,35,25,35,Other Non-communicable Diseases,Other Non-communicable Diseases
+adult,F56,ZZ22,ZZ25,Ovarian Cancer,Other Cancers,Other Non-communicable Diseases,16,30,25,30,Other Cancers,Other Non-communicable Diseases
+adult,K22,ZZ22,ZZ25,Liver Cancer,Other Cancers,Other Non-communicable Diseases,28,30,25,30,Other Cancers,Other Non-communicable Diseases
+adult,ZZ22,ZZ22,ZZ25,Other Cancers,Other Cancers,Other Non-communicable Diseases,48,30,25,30,Other Cancers,Other Non-communicable Diseases
+adult,ZZ24,ZZ24,ZZ25,Other Digestive Diseases,Other Digestive Diseases,Other Non-communicable Diseases,50,32,25,32,Other Digestive Diseases,Other Non-communicable Diseases
+adult,ZZ25,ZZ25,ZZ25,Other Non-communicable Diseases,Other Non-communicable Diseases,Other Non-communicable Diseases,51,35,25,35,Other Non-communicable Diseases,Other Non-communicable Diseases
+adult,J12,J12,J12,Pneumonia,Pneumonia,Pneumonia,25,37,26,37,Pneumonia,Pneumonia
+adult,T36,T36,T36,Poisonings,Poisonings,Poisonings,37,38,27,38,Poisonings,Poisonings
+adult,H61,H61,H61,Prostate Cancer,Prostate Cancer,Prostate Cancer,21,39,28,39,Prostate Cancer,Prostate Cancer
+adult,N17,N17,N17,Renal Failure,Renal Failure,Renal Failure,31,40,29,40,Renal Failure,Renal Failure
+adult,V99,V99,V99,Road Traffic,Road Traffic,Road Traffic,39,41,30,41,Road Traffic,Road Traffic
+adult,A16,A16,A16,Stomach Cancer,Stomach Cancer,Stomach Cancer,3,43,31,43,Stomach Cancer,Stomach Cancer
+adult,I64,I64,I64,Stroke,Stroke,Stroke,24,44,32,44,Stroke,Stroke
+adult,X70,X70,X70,Suicide,Suicide,Suicide,45,45,33,45,Suicide,Suicide
+adult,A15,A15,A15,TB,TB,TB,2,46,34,46,TB,TB
+child,,,,Undetermined,Undetermined,Undetermined,0,0,0,0,Undetermined,Undetermined
+child,B20,B20,B20,AIDS,AIDS,AIDS,7,1,1,1,AIDS,AIDS
+child,C30,B20,B20,AIDS with TB,AIDS,AIDS,9,1,1,1,AIDS,AIDS
+child,X20,X20,X20,Bite of Venomous Animal,Bite of Venomous Animal,Bite of Venomous Animal,19,2,2,2,Bite of Venomous Animal,Bite of Venomous Animal
+child,A09,A09,A09,Diarrhea/Dysentery,Diarrhea/Dysentery,Diarrhea/Dysentery,1,3,3,3,Diarrhea/Dysentery,Diarrhea/Dysentery
+child,W65,W65,W65,Drowning,Drowning,Drowning,17,4,4,4,Drowning,Drowning
+child,A83,A83,A83,Encephalitis,Encephalitis,Encephalitis,4,5,5,5,Encephalitis,Encephalitis
+child,W00,W00,W00,Falls,Falls,Falls,16,6,6,6,Falls,Falls
+child,X09,X09,X09,Fires,Fires,Fires,18,7,7,7,Fires,Fires
+child,A91,A91,A91,Hemorrhagic fever,Hemorrhagic fever,Hemorrhagic fever,5,8,8,8,Hemorrhagic fever,Hemorrhagic fever
+child,B54,B54,B54,Malaria,Malaria,Malaria,8,9,9,9,Malaria,Malaria
+child,B05,B05,B05,Measles,Measles,Measles,6,10,10,10,Measles,Measles
+child,A39,A39,A39,Meningitis,Meningitis,Meningitis,3,11,11,11,Meningitis,Meningitis
+child,ZZ12,ZZ12,ZZ12,Other Cancers,Other Cancers,Other Cancers,22,12,12,12,Other Cancers,Other Cancers
+child,ZZ13,ZZ13,ZZ13,Other Cardiovascular Diseases,Other Cardiovascular Diseases,Other Cardiovascular Diseases,23,13,13,13,Other Cardiovascular Diseases,Other Cardiovascular Diseases
+child,ZZ14,ZZ16,ZZ16,Other Respiratory Diseases,Other Defined Causes of Child Deaths,Other Defined Causes of Child Deaths,24,14,14,14,Other Defined Causes of Child Deaths,Other Defined Causes of Child Deaths
+child,ZZ16,ZZ16,ZZ16,Other Defined Causes of Child Deaths,Other Defined Causes of Child Deaths,Other Defined Causes of Child Deaths,26,14,14,14,Other Defined Causes of Child Deaths,Other Defined Causes of Child Deaths
+child,ZZ15,ZZ15,ZZ15,Other Digestive Diseases,Other Digestive Diseases,Other Digestive Diseases,25,15,15,15,Other Digestive Diseases,Other Digestive Diseases
+child,A15,ZZ11,ZZ11,TB,Other Infectious Diseases,Other Infectious Diseases,2,16,16,16,Other Infectious Diseases,Other Infectious Diseases
+child,ZZ11,ZZ11,ZZ11,Other Infectious Diseases,Other Infectious Diseases,Other Infectious Diseases,21,16,16,16,Other Infectious Diseases,Other Infectious Diseases
+child,J12,J12,J12,Pneumonia,Pneumonia,Pneumonia,10,17,17,17,Pneumonia,Pneumonia
+child,P3531,J12,J12,Pneumonia and Diarrhea,Pneumonia,Pneumonia,11,17,17,17,Pneumonia,Pneumonia
+child,T36,T36,T36,Poisonings,Poisonings,Poisonings,14,18,18,18,Poisonings,Poisonings
+child,V99,V99,V99,Road Traffic,Road Traffic,Road Traffic,15,19,19,19,Road Traffic,Road Traffic
+child,R20,R20,R20,Sepsis (with local bacterial infection),Sepsis,Sepsis,12,20,20,20,Sepsis,Sepsis
+child,S30,R20,R20,Sepsis (without local bacterial infection),Sepsis,Sepsis,13,20,20,20,Sepsis,Sepsis
+child,Y05,Y05,Y05,Violent Death,Violent Death,Violent Death,20,21,21,21,Violent Death,Violent Death
+child,,,,Protein-energy malnutrition,Protein-energy malnutrition,Protein-energy malnutrition,27,22,22,22,Protein-energy malnutrition,Protein-energy malnutrition
+neonate,,,,Undetermined,Undetermined,Undetermined,0,0,0,0,Undetermined,Undetermined
+neonate,P21,P21,P21,Birth asphyxia,Birth asphyxia,Birth asphyxia,7,1,1,1,Birth asphyxia,Birth asphyxia
+neonate,Q00,Q00,Q00,Congenital malformation,Congenital malformation,Congenital malformation,12,2,2,2,Congenital malformation,Congenital malformation
+neonate,P351,P351,P351,Sepsis (Serious Infection),Meningitis/Sepsis,Meningitis/Sepsis,8,3,3,3,Meningitis/Sepsis,Meningitis/Sepsis
+neonate,P352,P351,P351,Meningitis (Serious Infection),Meningitis/Sepsis,Meningitis/Sepsis,9,3,3,3,Meningitis/Sepsis,Meningitis/Sepsis
+neonate,P354,P354,P351,Sepsis with Local Bacterial Infection,Sepsis with Local Bacterial Infection,Meningitis/Sepsis,11,10,3,3,Meningitis/Sepsis,Meningitis/Sepsis
+neonate,P353,P353,P353,Pneumonia (Serious Infection),Pneumonia,Pneumonia,10,4,4,4,Pneumonia,Pneumonia
+neonate,O601,O601,O601,Preterm Delivery (<33 weeks GA) without Respiratory Distress Syndrome,Preterm Delivery without Respiratory Distress Syndrome,Preterm Delivery,1,9,5,5,Preterm Delivery,Preterm Delivery
+neonate,O6011,O6011,O601,Preterm Delivery (without RDS) and Birth Asphyxia,Preterm Delivery (without RDS) and Birth Asphyxia,Preterm Delivery,2,6,5,5,Preterm Delivery,Preterm Delivery
+neonate,O6012,O6012,O601,Preterm Delivery (with or without RDS) and Sepsis,Preterm Delivery (with or without RDS) and Sepsis,Preterm Delivery,3,5,5,5,Preterm Delivery,Preterm Delivery
+neonate,O6013,O6013,O601,Preterm Delivery (without RDS) and Sepsis and Birth Asphyxia,Preterm Delivery (without RDS) and Sepsis and Birth Asphyxia,Preterm Delivery,4,7,5,5,Preterm Delivery,Preterm Delivery
+neonate,O602,O602,O601,Respiratory distress syndrome (<33 wks GA),Preterm Delivery with Respiratory Distress Syndrome,Preterm Delivery,5,8,5,5,Preterm Delivery,Preterm Delivery
+neonate,O603,O602,O601,Respiratory distress syndrome (33-36 wks GA),Preterm Delivery with Respiratory Distress Syndrome,Preterm Delivery,6,8,5,5,Preterm Delivery,Preterm Delivery
+neonate,Z37,Z37,Z37,Stillbirth,Stillbirth,Stillbirth,13,11,6,6,Stillbirth,Stillbirth
+neonate,,,,Neonatal tetanus,Neonatal tetanus,Neonatal tetanus,14,12,7,7,Neonatal tetanus,Neonatal tetanus
