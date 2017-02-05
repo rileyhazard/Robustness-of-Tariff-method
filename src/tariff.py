@@ -537,8 +537,8 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
 
         if cutoffs:
             valid[X_ranks > np.asarray(cutoffs)] = worst_rank
-        valid[X_scores <= min_score] = worst_rank
-        valid[X_ranks > overall_cutoff] = worst_rank
+        valid[X_scores <= np.asarray(min_score)] = worst_rank
+        valid[X_ranks > np.asarray(overall_cutoff)] = worst_rank
 
         return valid
 
