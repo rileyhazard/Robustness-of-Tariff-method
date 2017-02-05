@@ -132,13 +132,6 @@ def calc_agegroup(series, vars):
         return 3
 
 
-def get_codebook(form):
-    """Get the codebook for a specified format"""
-    filepath = os.path.abspath(os.path.dirname(__file__))
-    cb_path = os.path.join(filepath, '..', 'codebooks', '{}.csv'.format(form))
-    return pd.read_csv(cb_path, index_col=0)
-
-
 def get_short_drop(form):
     """Get the list of columns to drop for the short form question"""
     cb = get_codebook(form)
