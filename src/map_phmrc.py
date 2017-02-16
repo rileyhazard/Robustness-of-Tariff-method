@@ -184,16 +184,6 @@ def main(directory=None, update_ghdx=False):
     outdir = os.path.join(filepath, '..', 'data')
 
     data = [adult, child, neonate]
-    gs = []
-    gs_cols = ['gs_text34', 'va34', 'gs_text46', 'va46']
-    for df in data:
-        # newid is a incrementor in each file.
-        # Make an index unique across the different modules
-        df['sid'] = df.module + df.newid.astype(str)
-        df = df.set_index('sid')
-        gs.append(df.loc[:, gs_cols])
-    gs = pd.concat(gs)
-    gs.to_csv(os.path.join(outdir, 'gold_standards', 'phmrc_gs.csv'))
 
     cb = prep_codebook(codebook)
     df = pd.concat([map_to_odk(df, cb) for df in data])
