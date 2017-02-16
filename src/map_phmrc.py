@@ -195,11 +195,11 @@ def main(directory=None, update_ghdx=False):
     odk_codebook = get_codebook('odk')
 
     full = df.copy()
-    full.loc[:, odk_codebook.loc[odk_codebook.full == 1].index] = ''
+    full.loc[:, odk_codebook.loc[odk_codebook.full == 0].index] = ''
     full.to_csv(os.path.join(outdir, 'odk', 'phmrc_full.csv'), index=False)
 
     short = df.copy()
-    short.loc[:, odk_codebook.loc[odk_codebook.short == 1].index] = ''
+    short.loc[:, odk_codebook.loc[odk_codebook.short == 0].index] = ''
     short.to_csv(os.path.join(outdir, 'odk', 'phmrc_short.csv'), index=False)
 
     return df
