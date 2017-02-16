@@ -139,8 +139,9 @@ def map_to_odk(df, cb):
 
     # The word 'pox' was mistranslated in the original survey. The intended
     # meaning is 'rash'. Correct the free text as suggested by Ian Riley.
-    df.word_rash = df.word_rash + df.word_pox
-    df.drop('word_rash', axis=1, inplace=True)
+    if 'word_rash' in df.columns:
+        df.word_rash = df.word_rash + df.word_pox
+        df.drop('word_rash', axis=1, inplace=True)
 
     # Combine words into dummy freetext
     freetext = df.filter(like="word_").apply(combine_freetext, axis=1)
