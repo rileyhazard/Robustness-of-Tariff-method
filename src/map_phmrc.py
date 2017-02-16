@@ -137,6 +137,11 @@ def map_to_odk(df, cb):
     df['agedays'] = df.apply(calc_agedays, vars=ODK_AGE_VARS, axis=1)
     df['gen_5_4d'] = df.apply(calc_agegroup, vars=ODK_AGE_VARS, axis=1)
 
+    # The word 'pox' was mistranslated in the original survey. The intended
+    # meaning is 'rash'. Correct the free text as suggested by Ian Riley.
+    df.word_rash = df.word_rash + df.word_pox
+    df.drop('word_rash', axis=1, inplace=True)
+
     # Combine words into dummy freetext
     freetext = df.filter(like="word_").apply(combine_freetext, axis=1)
     for module, var in FREETEXT_VARS.items():
