@@ -141,7 +141,7 @@ def map_to_odk(df, cb):
     # meaning is 'rash'. Correct the free text as suggested by Ian Riley.
     if 'word_rash' in df.columns:
         df.word_rash = df.word_rash + df.word_pox
-        df.drop('word_rash', axis=1, inplace=True)
+        df.drop('word_pox', axis=1, inplace=True)
 
     # Combine words into dummy freetext
     freetext = df.filter(like="word_").apply(combine_freetext, axis=1)
@@ -164,10 +164,10 @@ def map_to_odk(df, cb):
     # ints. Smartva cannot handle string floats (e.g. '7.0').
     df = df.fillna('').applymap(infer_dtype).astype(str)
     df = df.applymap(lambda x: x[:-2] if x.endswith('.0') else x)
-    return df
+    return df.set_index('sid')
 
 
-def main(directory=None, update_ghdx=False):
+def main(directory=None):
     filepath = os.path.abspath(os.path.dirname(__file__))
     if not directory:
         directory = os.path.join(filepath, '..', 'data', 'ghdx')
@@ -176,10 +176,7 @@ def main(directory=None, update_ghdx=False):
     files.extend([os.path.join(GHDX_FILENAME.format(module.upper()))
                   for module in MODULES])
 
-    if update_ghdx or not all(map(os.path.exists, files)):
-        codebook, adult, child, neonate = download_ghdx_data(directory)
-    else:
-        codebook, adult, child, neonate = load_local_ghdx_data()
+    codebook, adult, child, neonate = load_local_ghdx_data()
 
     outdir = os.path.join(filepath, '..', 'data')
 
@@ -192,11 +189,11 @@ def main(directory=None, update_ghdx=False):
 
     full = df.copy()
     full.loc[:, odk_codebook.loc[odk_codebook.full == 0].index] = ''
-    full.to_csv(os.path.join(outdir, 'odk', 'phmrc_full.csv'), index=False)
+    full.to_csv(os.path.join(outdir, 'odk', 'phmrc_full.csv'))
 
     short = df.copy()
     short.loc[:, odk_codebook.loc[odk_codebook.short == 0].index] = ''
-    short.to_csv(os.path.join(outdir, 'odk', 'phmrc_short.csv'), index=False)
+    short.to_csv(os.path.join(outdir, 'odk', 'phmrc_short.csv'))
 
     return df
 

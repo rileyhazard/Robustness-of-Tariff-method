@@ -94,6 +94,8 @@ def load_local_ghdx_data(directory=None):
     for module in MODULES:
         filename = GHDX_FILENAME.format(module.upper())
         df = pd.read_csv(os.path.join(directory, filename))
+        df['sid'] = df.module + df.newid.astype(str)
+        df = df.set_index('sid')
         out.append(df)
 
     return tuple(out)
