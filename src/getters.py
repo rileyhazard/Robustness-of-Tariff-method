@@ -122,7 +122,7 @@ def get_smartva_predictions(path, module, rules=True, cause_map=None):
 
 def get_smartva_symptoms(path, module):
     symptoms = get_smartva_symptom_file(path, module)
-    non_binary_cols = ['cause', 'real_age', 'real_gender']
+    non_binary_cols = ['cause', 'real_age', 'real_gender', 'restricted']
     non_binary_cols = symptoms.columns.intersection(non_binary_cols)
     return symptoms.drop(non_binary_cols, axis=1).fillna(0).astype(int)
 
