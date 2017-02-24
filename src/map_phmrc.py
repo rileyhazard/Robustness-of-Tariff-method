@@ -60,6 +60,38 @@ def map_to_odk(df, cb):
                       cb.loc[cb.type == 'numeric'].index)
     df.loc[:, num_cols] = df[num_cols].apply(pd.to_numeric, errors='coerce')
 
+    # Recode age
+    module = df.module.unique()
+    assert len(module) == 1
+    module = module[0].lower()
+
+    if module == 'adult':
+        module_num = 3
+        for sid in [3138, 7459]:
+            idx = df.loc[df.newid == sid].index
+            df.loc[idx, 'g5_04a'] = df.loc[idx].get('g5_04c')
+            df.loc[idx, 'g5_04c'] = np.nan
+    elif module == 'child':
+        module_num = 2
+        for sid in [954, 1301, 1329]:
+            idx = df.loc[df.newid == sid].index
+            df.loc[idx, 'g5_04b'] = df.loc[idx].get('g5_04a')
+            df.loc[idx, 'g5_04a'] = np.nan
+        df.loc[df.newid == 1372, 'g5_04c'] = 29
+        df = df.drop(df.loc[df.newid == 2062].index)
+    elif module == 'neonate':
+        module_num = 1
+        for sid in [545, 2152]:
+            idx = df.loc[df.newid == sid].index
+            df.loc[idx, 'g5_04c'] = df.loc[idx].get('g5_04a')
+            df.loc[idx, 'g5_04a'] = np.nan
+        for sid in [1192, 1377]:
+            idx = df.loc[df.newid == sid].index
+            df.loc[idx, 'g5_04c'] = df.loc[idx].get('g5_04b')
+            df.loc[idx, 'g5_04b'] = np.nan
+    else:
+        raise ValueError
+
     # ODK only has a single "select one" question for location of belly pain.
     # Upper belly pain is not relevant for tariff, only lower belly pain is
     # important. If lower belly pain is in the secondary belly pain location
@@ -164,6 +196,10 @@ def map_to_odk(df, cb):
     # ints. Smartva cannot handle string floats (e.g. '7.0').
     df = df.fillna('').applymap(infer_dtype).astype(str)
     df = df.applymap(lambda x: x[:-2] if x.endswith('.0') else x)
+
+    df.loc[:, 'gen_5_4d'] = module_num
+    
+
     return df.set_index('sid')
 
 
