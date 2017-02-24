@@ -1,11 +1,11 @@
 variable,question,module,type,full,short,hce,default,coding
-sid,Study ID number,general,text,1,1,0,'',
-gen_2_1,Language of interview,general,text,1,0,0,'',
-gen_2_2,Interviewer name,general,text,1,0,0,'',
+sid,Study ID number,general,sid,1,1,0,'',
+gen_2_1,Language of interview,general,info,1,0,0,'',
+gen_2_2,Interviewer name,general,info,1,0,0,'',
 gen_2_2a,Interviewer ID number,general,numeric,1,0,0,0,
-gen_2_4,Address of/directions to household,general,text,0,1,0,'',
+gen_2_4,Address of/directions to household,general,info,0,1,0,'',
 gen_3_1,Did respondent give consent?,general,categorical,1,1,0,1,"0 ""No"" 1 ""Yes"""
-gen_4_1,What is the respondent's name?,general,text,1,0,0,'',
+gen_4_1,What is the respondent's name?,general,info,1,0,0,'',
 gen_4_2,What is the sex of the respondent?,general,categorical,1,0,0,9,"1 ""Male"" 2 ""Female"" 8 ""Don't know"" 9 ""Refused to answer"""
 gen_4_3,What is the respondent's respondent's relationship to the deceased?,general,categorical,1,0,0,,"1 ""Mother"" 2 ""Father"" 3 ""Grandmother"" 4 ""Grandfather"" 5 ""Aunt"" 6 ""Uncle"" 7 ""Husband"" 8 ""Wife"" 9 ""Brother"" 10 ""Sister"" 11 ""Birth attendant (specify type)"" 12 ""Other male (specify)"" 13 ""Other female (specify)"""
 gen_4_3a,[What is the respondent's respondent's relationship to the deceased?] Birth attendant type (specify),general,text,1,0,0,'',
@@ -76,14 +76,14 @@ gen_6_1,Has the death been registered,general,numeric,0,1,0,0,
 gen_6_2b,[Record the date of registration] Year,general,numeric,0,1,0,9999,
 gen_6_2c,[Record the date of registration] Month,general,numeric,0,1,0,99,
 gen_6_2d,[Record the date of registration] Day of the month,general,numeric,0,1,0,99,
-gen_6_3,Record the registration number:,general,text,0,1,0,'',
+gen_6_3,Record the registration number:,general,info,0,1,0,'',
 gen_6_4,Has this death been notified?,general,categorical,0,1,0,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to answer"" 9 ""Don't know"""
-gen_6_5,Record the notification number:,general,text,0,1,0,'',
+gen_6_5,Record the notification number:,general,info,0,1,0,'',
 gen_6_6,Did the decedent have a National ID number?,general,categorical,0,1,0,9,"1 ""Yes"" 2 ""No"" 3 ""Too young for a National ID number"" 4 ""Not relevant"" 8 ""Refused to answer"" 9 ""Don't know"""
-gen_6_7,Record the National ID number:,general,text,0,1,0,'',
+gen_6_7,Record the National ID number:,general,info,0,1,0,'',
 gen_6_8,Does one of the parents have a National ID number?,general,categorical,0,1,0,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to answer"" 9 ""Don't know"""
 gen_6_9,Which parent will we record?,general,categorical,0,1,0,,"1 ""Mother"" 2 ""Father"""
-gen_6_10,Record the parent’s National ID number:,general,text,0,1,0,'',
+gen_6_10,Record the parent’s National ID number:,general,info,0,1,0,'',
 adult_1_1a,[Was the decedent ever told by a health professional that he or she ever suffered from] Asthma,adult,categorical,1,1,1,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to answer"" 9 ""Don't know"""
 adult_1_1b,[Was the decedent ever told by a health professional that he or she ever suffered from] Arthritis,adult,categorical,1,0,1,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to answer"" 9 ""Don't know"""
 adult_1_1c,[Was the decedent ever told by a health professional that he or she ever suffered from] Cancer,adult,categorical,1,1,1,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to answer"" 9 ""Don't know"""
@@ -279,7 +279,7 @@ adult_5_5c,[How long did the decedent survive after the injury?] Number of month
 adult_5_5d,[How long did the decedent survive after the injury?] Number of years,adult,numeric,1,0,0,0,
 adult_6_1,Was care sought outside the home while decedent had this illness?,adult,categorical,1,1,0,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to answer"" 9 ""Don't know"""
 adult_6_2,Where or from whom did you seek care?,adult,multiple,1,1,0,99,"1 ""Traditional healer"" 2 ""Homeopath"" 3 ""Religious leader"" 4 ""Government hospital"" 5 ""Govermental health center or clinic"" 6 ""Private hospital"" 7 ""Community-based practitioner associated with health system"" 8 ""Trained birth attendant"" 9 ""Private physician"" 10 ""Pharmacy, drug seller, store, market"" 11 ""Other provider"" 12 ""Relative, friend (outside household)"" 88 ""Refused to answer"" 99 ""Don't know"""
-adult_6_3,"Record the name and address of any hospital, health center or clinic where care was sought:",adult,text,1,1,0,'',
+adult_6_3,"Record the name and address of any hospital, health center or clinic where care was sought:",adult,info,1,1,0,'',
 adult_6_3a,Did a health care worker tell you the cause of death?,adult,categorical,1,1,0,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to answer"" 9 ""Don't know"""
 adult_6_3b,What did the health care worker say?,adult,text,1,1,0,'',
 adult_6_3c,Where did the deceased die?,adult,categorical,1,0,0,9,"1 ""Hospital"" 2 ""Other health facility"" 3 ""On route to hospital or other health facility"" 4 ""Home"" 5 ""Other (specify)"" 8 ""Refused to answer"" 9 ""Don't know"""
@@ -349,7 +349,7 @@ child_1_21a,[How long did the illness last?] Number of days,child,numeric,1,1,0,
 child_1_21b,[How long did the illness last?] Number of months,child,numeric,1,1,0,0,
 child_1_22,Where did the deceased die?,child,categorical,1,1,0,9,"1 ""Hospital"" 2 ""Other health facility"" 3 ""On route to hospital or other health facility"" 4 ""Home"" 5 ""Other (specify)"" 8 ""Refused to answer"" 9 ""Don't know"""
 child_1_22a,Where did the deceased die? [other specified],child,text,1,1,0,'',
-child_1_23,"For deaths at a hospital or health facility, record facility name and address:",child,text,1,1,0,'',
+child_1_23,"For deaths at a hospital or health facility, record facility name and address:",child,info,1,1,0,'',
 child_1_25,How old was the deceased at the time of death? [specify units],child,categorical,0,1,0,9,"1 ""Years"" 2 ""Months"" 4 ""Days"" 8 ""Refused to answer"" 9 ""Don't know"""
 child_1_25a,[How old was the deceased at the time of death?] Number of days,child,numeric,0,1,0,0,
 child_1_25b,[How old was the deceased at the time of death?] Number of months,child,numeric,0,1,0,0,
@@ -374,7 +374,7 @@ child_2_11,Did the mother receive any vaccinations since reaching adulthood incl
 child_2_12,How many doses of vaccinations did the mother receive?,child,categorical,1,1,0,9,"1 ""One"" 2 ""Two"" 3 ""Three"" 4 ""Four"" 5 ""Five or more"" 8 ""Refused to answer"" 9 ""Don't know"""
 child_2_15,Who delivered the baby?,child,categorical,1,1,0,9,"1 ""Doctor"" 2 ""Nurse/midwife"" 3 ""Relative"" 4 ""Self (mother)"" 5 ""Traditional birth attendant"" 6 ""Other (specify)"" 8 ""Refused to answer"" 9 ""Don't know"""
 child_2_15a,Who delivered the baby? [other specified],child,text,1,1,0,'',
-child_2_16,"If nurse/midwife in the community, record her name and address:",child,text,1,1,0,'',
+child_2_16,"If nurse/midwife in the community, record her name and address:",child,info,1,1,0,'',
 child_2_17,What was the method for delivery?,child,categorical,1,1,0,9,"1 ""Vaginal with foreceps"" 2 ""Vaginal without foreceps"" 3 ""Vaginal, Don't know"" 4 ""C-section"" 8 ""Refused to answer"" 9 ""Don't know"""
 child_2_18,"During labor but before delivery, did the mother receive any kind of injection?",child,categorical,1,1,0,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to answer"" 9 ""Don't know"""
 child_3_1,Were there any bruises or signs of injury on the baby's body at birth?,child,categorical,1,1,0,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to answer"" 9 ""Don't know"""
@@ -501,7 +501,7 @@ child_4_50a,[How long did the decedent survive after the injury or accident?] Nu
 child_4_50b,[How long did the decedent survive after the injury or accident?] Number of days,child,numeric,1,0,0,0,
 child_5_1,Was care sought outside the home while the decedent had this illness?,child,categorical,1,1,0,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to answer"" 9 ""Don't know"""
 child_5_2,Where or from whom did you seek care?,child,multiple,1,1,0,99,"1 ""Traditional healer"" 2 ""Homeopath"" 3 ""Religious leader"" 4 ""Government hospital"" 5 ""Govermental health center or clinic"" 6 ""Private hospital"" 7 ""Community-based practitioner associated with health system"" 8 ""Trained birth attendant"" 9 ""Private physician"" 10 ""Pharmacy, drug seller, store, market"" 11 ""Other provider"" 12 ""Relative, friend (outside household)"" 88 ""Refused to answer"" 99 ""Don't know"""
-child_5_3,"Record the name and address of any hospital, health center or clinic where care was sought:",child,text,1,1,0,'',
+child_5_3,"Record the name and address of any hospital, health center or clinic where care was sought:",child,info,1,1,0,'',
 child_5_0a,Did a health care worker tell you the cause of death?,child,categorical,1,1,0,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to answer"" 9 ""Don't know"""
 child_5_0b,What did the health care worker say?,child,text,1,1,0,'',
 child_5_4,Do you have any health records that belonged to the deceased?,child,categorical,1,1,0,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to answer"" 9 ""Don't know"""
