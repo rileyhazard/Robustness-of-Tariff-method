@@ -48,7 +48,7 @@ def combine_freetext(series):
     """Create a string to use as freetext from a series of word frequencies"""
     words_cols = series.loc[series > 0].index
     if words_cols.any():
-        return ' '.join(words_cols.str.lstrip('word_'))
+        return ' '.join(words_cols.str.slice(5))  # 'word_'
     return ''
 
 
