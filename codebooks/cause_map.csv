@@ -36,12 +36,12 @@ adult,ZZ23,ZZ23,ZZ23,Other Cardiovascular Diseases,Other Cardiovascular Diseases
 adult,N77,ZZ21,ZZ21,Pelvic Inflammatory Disease,Other Infectious Diseases,Other Infectious Diseases,32,33,23,33,Other Infectious Diseases,Other Infectious Diseases
 adult,ZZ21,ZZ21,ZZ21,Other Infectious Diseases,Other Infectious Diseases,Other Infectious Diseases,47,33,23,33,Other Infectious Diseases,Other Infectious Diseases
 adult,ZZ27,ZZ27,ZZ27,Other Injuries,Other Injuries,Other Injuries,53,34,24,34,Other Injuries,Other Injuries
-adult,C13,ZZ22,ZZ25,Mouth/ Orapharynx Cancer,Other Cancers,Other Non-communicable Diseases,6,30,25,30,Other Cancers,Other Non-communicable Diseases
-adult,C55,ZZ22,ZZ25,Uterine Cancer,Other Cancers,Other Non-communicable Diseases,11,30,25,30,Other Cancers,Other Non-communicable Diseases
+adult,C13,ZZ22,ZZ25,Mouth/ Orapharynx Cancer,Other Cancers,Other Non-communicable Diseases,6,30,25,30,Other Cancers,Other Cancers
+adult,C55,ZZ22,ZZ25,Uterine Cancer,Other Cancers,Other Non-communicable Diseases,11,30,25,30,Other Cancers,Other Cancers
 adult,F03,ZZ25,ZZ25,Dementia,Other Non-communicable Diseases,Other Non-communicable Diseases,15,35,25,35,Other Non-communicable Diseases,Other Non-communicable Diseases
-adult,F56,ZZ22,ZZ25,Ovarian Cancer,Other Cancers,Other Non-communicable Diseases,16,30,25,30,Other Cancers,Other Non-communicable Diseases
-adult,K22,ZZ22,ZZ25,Liver Cancer,Other Cancers,Other Non-communicable Diseases,28,30,25,30,Other Cancers,Other Non-communicable Diseases
-adult,ZZ22,ZZ22,ZZ25,Other Cancers,Other Cancers,Other Non-communicable Diseases,48,30,25,30,Other Cancers,Other Non-communicable Diseases
+adult,F56,ZZ22,ZZ25,Ovarian Cancer,Other Cancers,Other Non-communicable Diseases,16,30,25,30,Other Cancers,Other Cancers
+adult,K22,ZZ22,ZZ25,Liver Cancer,Other Cancers,Other Non-communicable Diseases,28,30,25,30,Other Cancers,Other Cancers
+adult,ZZ22,ZZ22,ZZ25,Other Cancers,Other Cancers,Other Non-communicable Diseases,48,30,25,30,Other Cancers,Other Cancers
 adult,ZZ24,ZZ24,ZZ25,Other Digestive Diseases,Other Digestive Diseases,Other Non-communicable Diseases,50,32,25,32,Other Digestive Diseases,Other Non-communicable Diseases
 adult,ZZ25,ZZ25,ZZ25,Other Non-communicable Diseases,Other Non-communicable Diseases,Other Non-communicable Diseases,51,35,25,35,Other Non-communicable Diseases,Other Non-communicable Diseases
 adult,J12,J12,J12,Pneumonia,Pneumonia,Pneumonia,25,37,26,37,Pneumonia,Pneumonia
