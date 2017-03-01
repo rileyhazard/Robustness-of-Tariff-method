@@ -53,7 +53,7 @@ def download_ghdx_data(outdir=None):
 
 def save_ghdx_gold_standards(adult, child, neonate, outfile):
     data = [adult, child, neonate]
-    gs_cols = ['site', 'module', 'gs_text46']
+    gs_cols = ['site', 'module', 'gs_text46', 'gs_level']
 
     # Nobody cares about the 11 neonate causes, only the 6
     neonate.gs_text46 = neonate.gs_text34
@@ -65,6 +65,7 @@ def save_ghdx_gold_standards(adult, child, neonate, outfile):
         df['sid'] = df.module + df.newid.astype(str)
         df = df.set_index('sid')
         df.module = df.module.str.lower()
+        df.gs_level = df.gs_level.str.lstrip('GS Level ')
         gs.append(df.loc[:, gs_cols])
     gs = pd.concat(gs)
     gs.to_csv(outfile)

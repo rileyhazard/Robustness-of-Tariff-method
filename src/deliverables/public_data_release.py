@@ -105,11 +105,14 @@ def add_gold_standards(df, dataset, cause_map):
         return cause_map[row.get('module')][row.get('gs_text46')]
 
     cols = df.columns.tolist()
+    df['study'] = dataset.upper()
+    df['site'] = gs.site
     df['module'] = gs.module
     df['gs_analytic'] = gs.gs_text46
     df['gs_reporting'] = gs.apply(recode_gs, axis=1)
-
-    cols = ['module', 'gs_analytic', 'gs_reporting'] + cols
+    df['gs_level'] = gs.gs_level
+    cols = ['study', 'site', 'module', 'gs_analytic', 'gs_reporting',
+            'gs_level'] + cols
     df = df.loc[df.module.notnull() & df.gs_analytic.notnull(), cols]
 
     return df
@@ -126,6 +129,7 @@ def get_words_by_module(module):
 
 def main():
     modules = ['adult', 'child', 'neonate']
+    outdir = os.path.join(REPO_DIR, 'external', 'data_release')
     cause_map = {module: get_cause_map(module, 'smartva_text', 'gs_text34')
                  for module in modules}
     words = {module: get_words_by_module(module) for module in modules}
@@ -144,26 +148,47 @@ def main():
     freetext = cb.loc[cb.type == 'text'].index.tolist()
     pid = cb.loc[cb.type == 'info'].index.tolist()
 
+    processed = {}
     for instr in ['short', 'full']:
         for dataset in ['phmrc', 'nhmrc']:
             filename = '{}_{}.csv'.format(dataset, instr)
             infile = os.path.join(REPO_DIR, 'data', 'odk', filename)
-            df = pd.read_csv(infile).set_index('sid')
+            df = pd.read_csv(infile, dtype={'sid': str}).set_index('sid')
             df = add_gold_standards(df, dataset, cause_map)
             df = remove_pid(df, dates, ages, freetext, pid,
                             words=words, replaces=WORD_SUBS)
             if instr == 'short':
                 df.loc[:, ODK_FREETEXT_COLS] = np.nan
-            if 'phmrc':
-                col_order = df.columns.tolist()
-            else:
-                df['counter'] = range(df.shape[0])
-                df.index = df.counter.map(lambda x: 'NHMRC{}'.format(x))
-                df.drop('counter', axis=1, inplace=True)
-                df = df.loc[:, col_order]
+            if dataset == 'nhmrc':
+                df.index = ['NHMRC{}'.format(x) for x in range(df.shape[0])]
 
-            df.to_csv(os.path.join(REPO_DIR, 'external', 'data_release',
-                                   filename))
+            for col in np.unique(df.columns[df.columns.duplicated()]):
+                val = df[col].apply(lambda row: np.nan if row.isnull().all()
+                                    else row.dropna().iloc[0], axis=1)
+                df = df.drop(col, axis=1)
+                df[col] = val
+            processed[dataset, instr] = df
+
+            df.to_csv(os.path.join(outdir, filename))
+
+    phmrc = processed['phmrc', 'full']
+    nhmrc = processed['nhmrc', 'full']
+    full = pd.concat([phmrc, nhmrc.loc[:, phmrc.columns]])
+    full = full.drop('gen_5_5.1', axis=1)
+    full = full.fillna('').astype(str) \
+               .applymap(lambda x: x[:-2] if x.endswith('.0') else x)
+    full.index.name = 'sid'
+    full.to_csv(os.path.join(outdir, 'gs_full.csv'))
+
+
+def recast(x):
+    if isinstance(x, basestring):
+        return x
+    if pd.isnull(x):
+        return x
+    if float(x) == int(x):
+        return int(x)
+    return x
 
 
 WORD_SUBS = {
@@ -176,7 +201,7 @@ WORD_SUBS = {
     'aids': 'hiv',
     'anaemia': 'anemia',
     'anemic': 'anemia',
-    'baby\'s': 'babi',
+    'babys': 'babi',
     'babies': 'babi',
     'baby': 'babi',
     'bit': 'bite',
@@ -260,9 +285,6 @@ WORD_SUBS = {
     'smoker': 'smoke',
     'stroked': 'stroke',
     'swollen': 'swell',
-    'tb': 'tb',
-    't.b': 'tb',
-    't.b.': 'tb',
     'transfussed': 'transfuse',
     'transfussion': 'transfuse',
     'tuberculosis': 'tb',
