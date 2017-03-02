@@ -169,7 +169,7 @@ def main():
                 df[col] = val
             processed[dataset, instr] = df
 
-            df.to_csv(os.path.join(outdir, filename))
+            # df.to_csv(os.path.join(outdir, filename))
 
     phmrc = processed['phmrc', 'full']
     nhmrc = processed['nhmrc', 'full']
@@ -178,17 +178,8 @@ def main():
     full = full.fillna('').astype(str) \
                .applymap(lambda x: x[:-2] if x.endswith('.0') else x)
     full.index.name = 'sid'
-    full.to_csv(os.path.join(outdir, 'gs_full.csv'))
-
-
-def recast(x):
-    if isinstance(x, basestring):
-        return x
-    if pd.isnull(x):
-        return x
-    if float(x) == int(x):
-        return int(x)
-    return x
+    real_gs = full.gs_level.isin(['1', 1, '2', 2, '2B'])
+    full.loc[real_gs].to_csv(os.path.join(outdir, 'gs_full.csv'))
 
 
 WORD_SUBS = {
