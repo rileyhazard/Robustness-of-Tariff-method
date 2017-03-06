@@ -77,16 +77,13 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
         Returns:
             self
         """
-        if hasattr(X, 'columns'):
-            symptoms = X.columns.values
-        else:
-            symptoms = np.arange(X.shape[1], dtype=np.int)
+        symptoms = X.columns.copy() if isinstance(X, pd.DataFrame) else None
 
         X, y = check_X_y(X, y)
-        X = pd.DataFrame(X, columns=symptoms)
+        X = pd.DataFrame(X, columns=symptoms, copy=True)
         self.X_ = X
         self.y_ = y
-        self.symptoms_ = symptoms
+        self.symptoms_ = symptoms.tolist()
 
         causes, counts = np.unique(y, return_counts=True)
         self.causes_ = causes
@@ -167,13 +164,11 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
                 best rank cause on this matrix is the prediction
 
         """
-        if isinstance(X, pd.DataFrame):
-            input_is_df = True
-            df_index = X.index
-        else:
-            input_is_df = False
-
         check_is_fitted(self, ['tariffs_', 'X_uniform_', 'cutoff_ranks_'])
+
+        input_is_df = isinstance(X, pd.DataFrame)
+        df_index = X.index.copy() if input_is_df else None
+
         X = check_array(X)
 
         scored = self.score_samples(X, self.tariffs_)
