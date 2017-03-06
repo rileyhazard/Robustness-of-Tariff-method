@@ -119,7 +119,7 @@ def bootstrap_tariffs(X, y, n=500, name='value'):
                  .groupby(np.repeat(np.arange(n), df.index.shape[0])).mean()
 
     def calc_ui(arr):
-        return pd.Series(np.percentile(arr, (2.5, 97.5)), index=['lb', 'ub'])
+        return pd.Series(np.percentile(arr, (0.5, 99.5)), index=['lb', 'ub'])
 
     endorsements = X.groupby(y).apply(bootstrapped_endorsements)
 
@@ -197,7 +197,7 @@ def main():
     # writing headers
     pd.formats.format.header_style = None
 
-    outfile = os.path.join(REPO_DIR, 'external', 'tariffs', 'tariffs.xlsx')
+    outfile = os.path.join(REPO_DIR, 'external', 'tariffs', 'tariffs_99UI.xlsx')
     writer = pd.ExcelWriter(outfile, engine='xlsxwriter')
     workbook = writer.book
 
