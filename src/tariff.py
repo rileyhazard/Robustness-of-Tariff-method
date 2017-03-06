@@ -528,7 +528,7 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
         valid = check_array(X_ranks, copy=True)
 
         overall_cutoff = float(train_n * min_pct / float(100))
-        worst_rank = train_n + 0.5
+        worst_rank = np.nan
 
         if cutoffs:
             valid[X_ranks > np.asarray(cutoffs)] = worst_rank
@@ -591,10 +591,10 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
     @staticmethod
     def best_ranked(series):
         """Determine best ranked prediction from a series of ranks"""
-        if len(series.unique()) == 1:
-            return np.nan
+        if series.notnull().any():
+            return series.dropna().sort_values().first_valid_index()
         else:
-            return series.sort_values().first_valid_index()
+            return np.nan
 
     def get_undetermined_proportions(self):
         """Return proportions used to redistribute the undetermined CSMF"""
