@@ -1,4 +1,4 @@
-from decimal import Decimal
+from __future__ import division, print_function
 
 import numexpr as ne
 import numpy as np
@@ -239,7 +239,7 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
             csmf (series): cause-specific mortality fractions
         """
         pred = self.predict(X, undetermined=np.nan)
-        csmf = pred.value_counts(dropna=False) / float(len(pred))
+        csmf = pred.value_counts(dropna=False) / len(pred)
         csmf = csmf.loc[list(self.causes_) + [np.nan]].fillna(0)
 
         if self.redistribute:
@@ -342,7 +342,7 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
         Returns:
             (bool)
         """
-        tail = (100 - ui) / float(2)
+        tail = (100 - ui) / 2
         lower, upper = tuple(np.percentile(arr, [tail, 100 - tail]))
         return lower < 0 and upper > 0
 
@@ -356,7 +356,7 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
         Returns:
             tariffs (dataframe): rounded tariff values
         """
-        return tariffs.applymap(lambda x: round(Decimal(x) / Decimal(p)) * p)
+        return tariffs.applymap(lambda x: round(x / p) * p)
 
     def remove_spurious_associations(self, tariffs, spurious):
         """Remove specified spurious associations from tariff matrix
@@ -505,7 +505,7 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
         higher = X_test[:, :, np.newaxis] > X_train.T[np.newaxis, :, :]
         higher = np.apply_along_axis(np.sum, 2, higher)
 
-        return (lower + (X_train.shape[0] - higher)) / float(2) + 0.5
+        return (lower + (X_train.shape[0] - higher)) / 2 + 0.5
 
     def mask_uncertain(self, X_scores, X_ranks, train_n, min_score=0,
                        cutoffs=None, min_pct=100):
@@ -527,7 +527,7 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
         X_scores = check_array(X_scores)
         valid = check_array(X_ranks, copy=True)
 
-        overall_cutoff = float(train_n * min_pct / float(100))
+        overall_cutoff = train_n * min_pct / 100
         worst_rank = np.nan
 
         if cutoffs:
@@ -600,7 +600,7 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
         """Return proportions used to redistribute the undetermined CSMF"""
         # TODO: bring in external CSMF data
         # For now just redistribute evenly
-        return pd.Series(np.full(self.n_causes_, 1 / float(self.n_causes_)),
+        return pd.Series(np.full(self.n_causes_, 1 / self.n_causes_),
                          index=self.causes_)
 
     def redistribution(self, csmf, proportions):
@@ -660,7 +660,7 @@ if __name__ == '__main__':
     init.remove('self')
 
     clf = TariffClassifier(**{k: v for k, v in metadata.items() if k in init})
-    print clf
+    print(clf)
     clf.fit(X, gs, metadata.get('spurious_associations'))
     results = clf.predict(X, ages=ages, sexes=sexes, rules=ruled,
                           restrictions=metadata.get('restrictions'))
