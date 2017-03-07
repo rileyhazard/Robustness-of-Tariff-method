@@ -1,7 +1,7 @@
 module,gs_code55,gs_code46,gs_code34,gs_text55,gs_text46,gs_text34,va55,va46,va34,smartva,smartva_text,smartva_reporting
 adult,,,,Undetermined,Undetermined,Undetermined,0,0,0,0,Undetermined,Undetermined
 adult,B20,B20,B20,AIDS,AIDS,AIDS,4,1,1,1,AIDS,AIDS
-adult,C30,C30,B20,AIDS with TB,AIDS with TB,AIDS,8,2,1,2,AIDS with TB,AIDS with TB
+adult,C30,C30,B20,AIDS with TB,AIDS with TB,AIDS,8,2,1,2,AIDS with TB,AIDS
 adult,J45,J45,J45,Asthma,Asthma,Asthma,27,4,2,4,Asthma,Chronic Respiratory
 adult,X20,X20,X20,Bite of Venomous Animal,Bite of Venomous Animal,Bite of Venomous Animal,44,5,3,5,Bite of Venomous Animal,Bite of Venomous Animal
 adult,C50,C50,C50,Breast Cancer,Breast Cancer,Breast Cancer,10,6,4,6,Breast Cancer,Breast Cancer
