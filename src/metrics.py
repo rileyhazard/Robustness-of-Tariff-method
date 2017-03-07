@@ -1,4 +1,5 @@
 from __future__ import division
+import math
 
 import pandas as pd
 import numpy as np
@@ -12,6 +13,13 @@ def calc_sensitivity(class_, actual, predicted):
     Sensitivity is also known true positive rate, recall, or probability of
     detection. It is the number of correct predictions for the given class
     over the total number of predictions for the class.
+
+    .. math::
+        sensitivity = \\frac{TP}{P} = \\frac{TP}{TP + FN}
+
+    where TP is the number of true postives prections, P is the number of true
+    positives in the sample, and FN is the number of false positives
+    predictions.
 
     Args:
         class_: a label in the actual and predicted arrays
@@ -34,6 +42,13 @@ def calc_specificity(class_, actual, predicted):
     prediction which are correctly determined to not belong to the given
     class over the total number that to not belong to the class.
 
+    .. math::
+        specificity = \\frac{TN}{N} = \\frac{TN}{TN + FP}
+
+    where TN is the number of true negatives predictions, N is the number of
+    samples which are not the given class, and FP is the number of false
+    positive predictions.
+
     Args:
         class_: a label in the actual and predicted arrays
         actual (sequence): true individual level classification
@@ -54,6 +69,12 @@ def calc_positive_predictive_value(class_, actual, predicted):
     Positive predictive value is also known as precision. It is the number of
     correct predictions for a given class over the total number of predictions
     of the class.
+
+    .. math::
+         PPV = \\frac{TP}{PP} = \\frac{TP}{TP + FP}
+
+    where TP is the number of true positive predictions, PP is the number of
+    positive predictions, and FP is the number of false positive predictions.
 
     Args:
         class_: a label in the actual and predicted arrays
@@ -76,6 +97,12 @@ def calc_negative_predictive_value(class_, actual, predicted):
     to not belong to the given class over the total number of predicted to
     not belong to the class.
 
+    .. math::
+         PPV = \\frac{TP}{PP} = \\frac{TP}{TP + FP}
+
+    where TP is the number of true positive predictions, PP is the number of
+    positive predictions, and FP is the number of false positive predictions.
+
     Args:
         class_: a label in the actual and predicted arrays
         actual (sequence): true individual level classification
@@ -90,13 +117,16 @@ def calc_negative_predictive_value(class_, actual, predicted):
     return true_negative / n_not_predicted if n_not_predicted else np.na
 
 
-def calc_prediction_accuracy(class_, actual, predicted):
+def calc_specific_accuracy(class_, actual, predicted):
     """Calculate accuracy for a single class
 
     Accuracy for a single class is the number of predictions correctly
     classified with regard to this class over the entire population.
     Misclassification of other labels among true negative predictions does
     not affect this statistic.
+
+    .. math::
+        accuracy = \\frac{TP + TN}{TP + FP + FN + TN}
 
     Args:
         class_: a label in the actual and predicted arrays
@@ -114,6 +144,24 @@ def calc_prediction_accuracy(class_, actual, predicted):
 
 def calc_ccc(class_, actual, predicted):
     """Calculate chance-corrected concordance for a single class
+
+    Concordance is a multiclass generalization of sensitivity which captures
+    number of observation on the diagonal of the misclassification matrix over
+    the whole sample. This is corrected for chance by making the naive
+    assumption that the likelihood of predicting a given class purely by chance
+    is uniformly distributed across class. This differs from Cohen's kappa
+    which assumes the likelihood of predicting a class purely due to chance is
+    a function of its true prevalences in the sample. The naive assumption
+    gives estimates which are more comparable across study populations with
+    different true underlying class distributions and across studies which use
+    different number of classes. For class j, CCC is calculated as:
+
+    .. math::
+       CCC_j = \\frac{\\Big( \\frac{TP_j}{TP_j + FN_j}\\Big) - (\\frac{1}{N})}
+               {1 - (\\frac{1}{N})}
+
+    where TP is the true positive rate and FN is the false negative rate
+    and N is the total number of observations.
 
     Args:
         class_: a label in the actual and predicted arrays
@@ -160,15 +208,19 @@ def calc_csmf_accuracy_from_csmf(actual, predicted):
     """Calculate Cause-Specific Mortality Fraction (CSMF) accuracy from CSMF
        estimates
 
+    .. math::
+       CSMF Accuracy = 1 - \\frac{\\sum_{j=1}^k |CSMF_j^{true}-CSMF_j^{pred}|}
+                          {2 \\Big(1 - Minimum\\Big(CSMF_j^{true}\\Big)\\Big)}
+
     Args:
-        actual (sequence or dict): true population level CSMFs
-        predicted (sequence or dict): predicted population level CSMFs
+        actual (sequence): true population level CSMFs
+        predicted (sequence): predicted population level CSMFs
 
     Returns:
         float
     """
     actual, predicted = safe_align_sequence(actual, predicted)
-    abs_error = np.abs(predicted - actual).sum()
+    abs_error = np.abs(actual - predicted).sum()
     return 1 - abs_error / (2 * (1 - actual.min()))
 
 
@@ -195,13 +247,22 @@ def calc_csmf_accuracy(actual, predicted):
 def correct_csmf_accuracy(uncorrected):
     """Correct Cause-Specific Mortality Fraction accuracy for chance
 
+    CSMF accuracy can be correct for chance using the following equation:
+
+    .. math::
+        CCCSMF = \\frac{CSMF - (1 - e^{-1})}{1 - (1 - e^{-1})}
+                 \\approx \\frac{CSMF - 0.632}{1 - 0.632}
+
+    This provides a more interpretable metric in which 1.0 is perfect,
+    0.0 is equivalent to chance and negative values are worst than chance.
+
     Args:
         uncorrected (float): Cause-Specific Mortality (CSMF) accuracy
 
     Returns:
         float
     """
-    return (uncorrected - 0.632) / (1 - 0.632)
+    return (uncorrected - (1 - math.e**-1)) / (1 - (1 - math.e**-1))
 
 
 def calc_cccsmf_accuracy(actual, predicted):
@@ -223,8 +284,8 @@ def calc_cccsmf_accuracy_from_csmf(actual, predicted):
        accuracy from CSMF estimates
 
     Args:
-        actual (sequence or dict): true population level CSMFs
-        predicted (sequence or dict): predicted population level CSMFs
+        actual (sequence): true population level CSMFs
+        predicted (sequence): predicted population level CSMFs
 
     Returns:
         float
