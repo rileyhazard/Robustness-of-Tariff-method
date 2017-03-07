@@ -1,239 +1,121 @@
-import math
-import os
+from __future__ import division
 
-import numpy as np
-import pandas as pd
 import pytest
-import sklearn
+import numpy as np
+from sklearn.dummy import DummyClassifier
 
-from code.analyze import *
-from code.classifiers import random_allocation
-from code.tariff import get_tariff_cause_aggregation
-
-
-class TestResample(object):
-    def test_baseline(self):
-        x = np.zeros((5,5))
-        y = np.array([1,1,1,2,2])
-        d = pd.Series([.5,.5], index=[1,2])
-        x_new, y_new = resample(x, y, 5, d)
-
-    def test_fail_different_lengths(self):
-        x = np.zeros((3,3))
-        y = np.arange(5)
-        d = pd.Series([.5,.5], index=[1,2])
-        try:
-            x_new, y_new = resample(x, y, 5, d)
-        except AssertionError:
-            x_new, y_new = ('null', 'null')
-        assert x_new == y_new == 'null'
-
-    def test_fail_non_unique_distribution(self):
-        x = np.zeros((5,5))
-        y = np.array([1,1,1,2,2])
-        d = pd.Series([.5,.5], index=[1,1])
-        try:
-            x_new, y_new = resample(x, y, 5, d)
-        except AssertionError:
-            x_new, y_new = ('null', 'null')
-        assert x_new == y_new == 'null'
-
-    def test_fail_distribution_less_than_one(self):
-        x = np.zeros((5,5))
-        y = np.array([1,1,1,2,2])
-        d = pd.Series([.2,.5], index=[1,1])
-        try:
-            x_new, y_new = resample(x, y, 5, d)
-        except AssertionError:
-            x_new, y_new = ('null', 'null')
-        assert x_new == y_new == 'null'
-
-    def test_fail_distribution_more_than_one(self):
-        x = np.zeros((5,5))
-        y = np.array([1,1,1,2,2])
-        d = pd.Series([.7,.5], index=[1,1])
-        try:
-            x_new, y_new = resample(x, y, 5, d)
-        except AssertionError:
-            x_new, y_new = ('null', 'null')
-        assert x_new == y_new == 'null'
-
-    @pytest.mark.parametrize('i', [
-            range(3),
-            range(3,6),
-            ['a', 'b', 'c'],
-            ['d', 'e', 'f'],
-        ])
-    def test_new_prediction_in_distribution(self, i):
-        x = np.zeros((5,5))
-        y = np.random.choice(i, 5)
-        d = pd.Series([.3, .3, .4], index=i)
-        x_new, y_new = resample(x, y, 5, d)
-        y_new_values = np.unique(y_new).tolist()
-        assert not [n for n in y_new_values if n not in i]
-
-    @pytest.mark.parametrize("n", [0,1,5,10,100])
-    def test_output_new_n(self, n):
-        x = np.zeros((5,5))
-        y = np.array([1,1,1,2,2])
-        d = pd.Series([.5,.5], index=[1,2])
-        x_new, y_new = resample(x, y, n, d)
-        assert len(x_new) == len(y_new) == n
-
-    @pytest.mark.parametrize('distribution', [
-            [.2, .3, .5],
-            [.1, .1, .8],
-            [.6, .3, .1],
-            [.4, .2, .4],
-            [1/3., 1/3., 1/3.],
-            [1/4., 1/4., 1/2.],
-            [.03, .17, .8]
-        ])
-    def test_new_y_distribution(self, distribution):
-        x = np.zeros((3, 5))
-        y = np.arange(3)
-        d = pd.Series(distribution, index=['a', 'b', 'c'])
-        n = 10
-        iterations = 5000
-        results = []
-        for i in range(iterations):
-            x_new, y_new = resample(x, y, n, d)
-            d_new = pd.Series(y_new).value_counts()
-            results.append(d_new)
-        mean_d_new = pd.concat(results, axis=1).sum(1)/float(n * iterations)
-        assert np.allclose(distribution, mean_d_new, atol=0.01)
+from src.validation import *
 
 
-class TestCalcSpecificCCC(object):
-    def test_perfect_prediction(self):
-        """4 of 4 correct"""
-        i = ['a', 'b', 'c', 'd']
-        a = pd.Series([1,2,1,2], index=i)
-        p = pd.Series([1,2,1,2], index=i)
-        ccc = calc_ccc(1, a, p)
-        assert ccc == 1
+@pytest.fixture
+def clf():
+    return DummyClassifier(strategy='uniform')
 
-    def test_at_chance(self):
-        """2 possibilities and 50% (2 of 4 )correct"""
-        i = ['a', 'b', 'c', 'd']
-        a = pd.Series([1,2,1,2], index=i)
-        p = pd.Series([1,1,2,2], index=i)
-        ccc = calc_ccc(1, a, p)
-        assert ccc == 0
 
-    def test_all_wrong(self):
-        """0 of 4 correct"""
-        i = ['a', 'b', 'c', 'd']
-        a = pd.Series([1,2,1,2], index=i)
-        p = pd.Series([2,1,2,1], index=i)
-        ccc = calc_ccc(1, a, p)
-        assert ccc == -1
-
-    def test_no_matching_indicies(self):
-        a = pd.Series([1,2,1,2], index=['a', 'b', 'c', 'd'])
-        p = pd.Series([2,1,2,1], index=['e', 'f', 'g', 'h'])
-        try:
-            ccc = calc_ccc(1, a, p)
-        except AssertionError:
-            ccc = 'null'
-        assert ccc is 'null'
-
-    def test_one_mismatched_indicies(self):
-        a = pd.Series([1,2,1,2], index=['a', 'b', 'c', 'd'])
-        p = pd.Series([2,1,2,1], index=['a', 'b', 'c', 'ZZZ'])
-        try:
-            ccc = calc_ccc(1, a, p)
-        except AssertionError:
-            ccc = 'null'
-        assert ccc is 'null'
-
-    def test_missing_actual_none(self):
-        i = ['a', 'b', 'c', 'd']
-        a = pd.Series([1,2,1,None], index=i)
-        p = pd.Series([1,2,2,2], index=i)
-        try:
-            ccc = calc_ccc(1, a, p)
-        except AssertionError:
-            ccc = 'null'
-        assert ccc is 'null'
-
-    def test_missing_actual_nan(self):
-        i = ['a', 'b', 'c', 'd']
-        a = pd.Series([1,2,1,np.nan], index=i)
-        p = pd.Series([1,2,2,2], index=i)
-        try:
-            ccc = calc_ccc(1, a, p)
-        except AssertionError:
-            ccc = 'null'
-        assert ccc is 'null'
-
-    def test_missing_prediction_none(self):
-        i = ['a', 'b', 'c', 'd']
-        a = pd.Series([1,2,1,2], index=i)
-        p = pd.Series([1,2,2,None], index=i)
-        try:
-            ccc = calc_ccc(1, a, p)
-        except AssertionError:
-            ccc = 'null'
-        assert ccc is 'null'
-
-    def test_missing_prediction_nan(self):
-        i = ['a', 'b', 'c', 'd']
-        a = pd.Series([1,2,1,2], index=i)
-        p = pd.Series([1,2,2,np.nan], index=i)
-        try:
-            ccc = calc_ccc(1, a, p)
-        except AssertionError:
-            ccc = 'null'
-        assert ccc is 'null'
-
-class TestCCAccuracy(object):
-    def test_perfect_prediction(self):
-        """All correct"""
-        i = ['a', 'b', 'c', 'd']
-        a = pd.Series([.5,.2,.2,.1], index=i)
-        p = pd.Series([.5,.2,.2,.1], index=i)
-        acc, cc_acc = calc_cc_accuracy(a, p)
-        assert acc, cc_acc == (1, 1)
+def test_prediction_accuracy(clf):
+    X_train, y_train = np.zeros((5, 5)), np.ones(5)
+    X_test, y_test = np.zeros((5, 5)), np.ones(5)
+    prediction_accuracy(clf, X_train, y_train, X_test, y_test)
 
 
 class TestOutOfSampleAccuracy(object):
-    def test_selector_StratifiedShuffleSplit(self):
-        x = np.zeros((100,5))
-        y = np.array(range(5) * 20)
-        g = np.array([math.floor(i/float(20)) for i in range(100)])
-        ms = selector_StratifiedShuffleSplit()
-        fit = random_allocation
-        out_of_sample_accuracy(x,y,g,ms,fit)
+    def test_selector_StratifiedShuffleSplit(self, clf):
+        x = np.zeros((100, 5))
+        y = np.tile(range(5), 20)
+        g = np.array([int(i / 20) for i in range(100)])
+        ms = config_model_selector('sss')
+        out_of_sample_accuracy(x, y, clf, ms, groups=g)
+
+    def test_selector_StratifiedShuffleSplit_splits(self, clf):
+        x = np.zeros((100, 5))
+        y = np.tile(range(5), 20)
+        g = np.array([int(i / 20) for i in range(100)])
+        n_splits = 5
+        ms = config_model_selector('sss', n_splits=n_splits)
+        results = out_of_sample_accuracy(x, y, clf, ms, groups=g)
+        preds, csmf, ccc, accuracy = results
+        assert len(accuracy) == n_splits
+
+    def test_selector_LeavePGroupsOut(self, clf):
+        x = np.zeros((100, 5))
+        y = np.tile(range(5), 20)
+        g = np.array([int(i / 20) for i in range(100)])
+        ms = config_model_selector('holdout')
+        out_of_sample_accuracy(x, y, clf, ms, groups=g)
+
+    def test_selector_LeavePGroupsOut_splits(self, clf):
+        x = np.zeros((100, 5))
+        y = np.tile(range(5), 20)
+        g = np.array([int(i / 20) for i in range(100)])
+        ms = config_model_selector('holdout')
+        results = out_of_sample_accuracy(x, y, clf, ms, groups=g)
+        preds, csmf, ccc, accuracy = results
+        assert len(accuracy) == len(np.unique(g))
 
 
-    def test_selector_StratifiedShuffleSplit_splits(self):
-        x = np.zeros((100,5))
-        y = np.array(range(5) * 20)
-        g = np.array([math.floor(i/float(20)) for i in range(100)])
-        n = 5
-        ms = selector_StratifiedShuffleSplit(n)
-        fit = random_allocation
-        results = out_of_sample_accuracy(x,y,g,ms,fit)
-        summary, summ_by_pred, prediction, distribution, association = results
-        assert len(summary) == n
+class TestDirichletResample(object):
+    def test_grouping(self):
+        n_classes = 3
+        n_samples_per_class = 5
+        y = np.repeat(range(n_classes), n_samples_per_class)
+        X = np.concatenate([np.full((n_samples_per_class, 7), i)
+                            for i in range(n_classes)])
+
+        for _ in range(100):
+            X_new, y_new = dirichlet_resample(X, y)
+            assert np.all(X_new == y_new[:, np.newaxis])
+
+            idx = np.random.choice(n_classes * n_samples_per_class, 100)
+            X_new, y_new = dirichlet_resample(X[idx], y[idx])
+            assert np.all(X_new == y_new[:, np.newaxis])
+
+    def test_grouping_pandas(self):
+        n_classes = 3
+        n_samples_per_class = 5
+        n_samples = n_classes * n_samples_per_class
+        idx = list(map(chr, range(65, 65 + n_samples)))
+        y = pd.Series(np.repeat(range(n_classes), n_samples_per_class),
+                      index=idx)
+        X = np.concatenate([np.full((n_samples_per_class, 7), i)
+                            for i in range(n_classes)])
+        X = pd.DataFrame(X, index=idx)
+        for _ in range(100):
+            X_new, y_new = dirichlet_resample(X, y)
+            assert (X_new.index == y_new.index).all()
+            X_new = X_new.reset_index(drop=True)
+            y_new = y_new.reset_index(drop=True)
+            assert X_new.eq(y_new, axis=0).all().all()
+
+            idx_new = np.random.choice(idx, 100)
+            X_new, y_new = dirichlet_resample(X.loc[idx_new], y.loc[idx_new])
+            assert (X_new.index == y_new.index).all()
+            X_new = X_new.reset_index(drop=True)
+            y_new = y_new.reset_index(drop=True)
+            assert X_new.eq(y_new, axis=0).all().all()
+
+    def test_dirichlet(self):
+        n_classes = 5
+        y = np.repeat(range(n_classes), range(10, 20 * n_classes + 1, 20))
+        X = np.ones((y.shape[0], 7))
+
+        csmfs = []
+        for _ in range(10000):
+            X_new, y_new = dirichlet_resample(X, y)
+            classes, counts = np.unique(y_new, return_counts=True)
+            csmf = counts / counts.sum()
+
+            # Handle unsampled classes
+            if len(csmf) < n_classes:
+                for i in set(range(n_classes)).difference(y_new):
+                    csmf = list(csmf)
+                    csmf.insert(i, 0)
+            csmfs.append(csmf)
+
+        csmfs = np.array(csmfs).mean(0)
+        assert np.allclose(csmfs, 1 / n_classes, atol=0.005)
 
 
-    def test_selector_LeavePGroupsOut(self):
-        x = np.zeros((100,5))
-        y = np.array(range(5) * 20)
-        g = np.array([math.floor(i/float(20)) for i in range(100)])
-        ms = selector_LeavePGroupsOut()
-        fit = random_allocation
-        out_of_sample_accuracy(x,y,g,ms,fit)
-
-
-    def test_selector_LeavePGroupsOut_splits(self):
-        x = np.zeros((100,5))
-        y = np.array(range(5) * 20)
-        g = np.array([math.floor(i/float(20)) for i in range(100)])
-        ms = selector_LeavePGroupsOut()
-        fit = random_allocation
-        results = out_of_sample_accuracy(x,y,g,ms,fit)
-        summary, summ_by_pred, prediction, distribution, association = results
-        assert len(summary) == len(np.unique(g))
+@pytest.mark.parametrize('ms_id', ['sss', 'holdout'])
+def test_config_model_selector(ms_id):
+    ms = config_model_selector(ms_id)
+    assert hasattr(ms, 'split')
