@@ -145,6 +145,16 @@ def calc_specific_accuracy(class_, actual, predicted):
 def calc_ccc(class_, actual, predicted):
     """Calculate chance-corrected concordance for a single class
 
+    Chance corrected metrics are derived from the general equation:
+
+    .. math::
+
+        K_j = \\frac{P(observed)_j - P(expected)_j}{1 - P(expected)_j}
+
+    where K\ :sub:`J` is the corrected statistic for class j, P(observed)\
+    :sub:`j` is the observed probability of j, and P(expected)\ :sub:`j` is
+    the expected probability of j.
+
     Concordance is a multiclass generalization of sensitivity which captures
     number of observation on the diagonal of the misclassification matrix over
     the whole sample. This is corrected for chance by making the naive
@@ -165,7 +175,7 @@ def calc_ccc(class_, actual, predicted):
 
     Args:
         class_: a label in the actual and predicted arrays
-        actual: (sequence): true individual level classification
+        actual (sequence): true individual level classification
         predicted (sequence): individual level predictions
 
     Returns:
@@ -180,7 +190,7 @@ def calc_median_ccc(actual, predicted):
     """Calculate median chance-corrected concordance across all classes
 
     Args:
-        actual: (sequence): true individual level classification
+        actual (sequence): true individual level classification
         predicted (sequence): individual level predictions
 
     Returns:
@@ -194,7 +204,7 @@ def calc_mean_ccc(actual, predicted):
     """Calculate mean chance-corrected concordance across all classes
 
     Args:
-        actual: (sequence): true individual level classification
+        actual (sequence): true individual level classification
         predicted (sequence): individual level predictions
 
     Returns:
@@ -247,7 +257,24 @@ def calc_csmf_accuracy(actual, predicted):
 def correct_csmf_accuracy(uncorrected):
     """Correct Cause-Specific Mortality Fraction accuracy for chance
 
-    CSMF accuracy can be correct for chance using the following equation:
+    Chance corrected metrics are derived from the general equation:
+
+    .. math::
+
+        K_j = \\frac{P(observed)_j - P(expected)_j}{1 - P(expected)_j}
+
+    where K\ :sub:`j` is the corrected statistic for class j, P(observed)\
+    :sub:`j` is the observed probability of j, and P(expected)\ :sub:`j` is
+    the expected probability of j. It can be shown analytically and through
+    simulation, that the expected CSMF accuracy tends towards 1 - e\ :sup:`-1`
+    as the number of samples and classes tend towards infinity:
+
+    .. math::
+
+        \\lim_{N, j \\to \\infty} P(expected)_j = 1 - e^{-1}
+
+    We use this approximation to correct CSMF accuracy for chance regardless
+    of the number of samples or class:
 
     .. math::
         CCCSMF = \\frac{CSMF - (1 - e^{-1})}{1 - (1 - e^{-1})}
@@ -270,7 +297,7 @@ def calc_cccsmf_accuracy(actual, predicted):
        predictions
 
     Args:
-        actual: (sequence): true individual level classification
+        actual (sequence): true individual level classification
         predicted (sequence): individual level predictions
 
     Returns:
