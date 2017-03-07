@@ -29,7 +29,7 @@ def union_NDFrame_indicies(*frames, sort=False):
     return [f.loc[union] for f in frames]
 
 
-def safe_align_sequence(*seqs):
+def safe_align_sequences(*seqs):
     """Align sequences accounting for pandas indicies.
 
     If pandas.NDFrames are passed, they are unioned and non-matching

@@ -4,7 +4,7 @@ import math
 import pandas as pd
 import numpy as np
 
-from src.utils import safe_align_sequence
+from src.utils import safe_align_sequences
 
 
 def calc_sensitivity(class_, actual, predicted):
@@ -29,7 +29,7 @@ def calc_sensitivity(class_, actual, predicted):
     Returns:
         float
     """
-    actual, predicted = safe_align_sequence(actual, predicted)
+    actual, predicted = safe_align_sequences(actual, predicted)
     true_positive = ((actual == class_) & (predicted == class_)).sum()
     n_predicted = (actual == class_).sum()
     return true_positive / n_predicted if n_predicted else np.nan
@@ -57,7 +57,7 @@ def calc_specificity(class_, actual, predicted):
     Returns:
         float
     """
-    actual, predicted = safe_align_sequence(actual, predicted)
+    actual, predicted = safe_align_sequences(actual, predicted)
     true_negative = ((actual != class_) & (predicted != class_)).sum()
     n_not_class = (actual != class_).sum()
     return true_negative / n_not_class if n_not_class else np.na
@@ -84,7 +84,7 @@ def calc_positive_predictive_value(class_, actual, predicted):
     Returns:
         float
     """
-    actual, predicted = safe_align_sequence(actual, predicted)
+    actual, predicted = safe_align_sequences(actual, predicted)
     true_positive = ((actual == class_) & (predicted == class_)).sum()
     n_called = (predicted == class_).sum()
     return true_positive / n_called if n_called else np.nan
@@ -111,7 +111,7 @@ def calc_negative_predictive_value(class_, actual, predicted):
     Returns:
         float
     """
-    actual, predicted = safe_align_sequence(actual, predicted)
+    actual, predicted = safe_align_sequences(actual, predicted)
     true_negative = ((actual != class_) & (predicted != class_)).sum()
     n_not_predicted = (predicted != class_).sum()
     return true_negative / n_not_predicted if n_not_predicted else np.na
@@ -136,7 +136,7 @@ def calc_specific_accuracy(class_, actual, predicted):
     Returns:
         float
     """
-    actual, predicted = safe_align_sequence(actual, predicted)
+    actual, predicted = safe_align_sequences(actual, predicted)
     true_positive = ((actual == class_) & (predicted == class_)).sum()
     true_negative = ((actual != class_) & (predicted != class_)).sum()
     return (true_positive + true_negative) / len(actual)
@@ -219,7 +219,7 @@ def calc_csmf_accuracy_from_csmf(actual, predicted):
     Returns:
         float
     """
-    actual, predicted = safe_align_sequence(actual, predicted)
+    actual, predicted = safe_align_sequences(actual, predicted)
     abs_error = np.abs(actual - predicted).sum()
     return 1 - abs_error / (2 * (1 - actual.min()))
 
@@ -235,7 +235,7 @@ def calc_csmf_accuracy(actual, predicted):
     Returns:
         float
     """
-    actual, predicted = safe_align_sequence(actual, predicted)
+    actual, predicted = safe_align_sequences(actual, predicted)
     csmf_pred = pd.Series(predicted).value_counts() / float(len(predicted))
     csmf_true = pd.Series(actual).value_counts() / float(len(actual))
 
