@@ -3,19 +3,7 @@ from __future__ import division
 import pandas as pd
 import numpy as np
 
-
-def safe_align_sequence(*seqs):
-    """Align sequences accounting for pandas indicies
-
-    Args:
-        seqs (sequence)
-
-    Returns:
-        tuple of np.arrays
-    """
-    if any([isinstance(s, pd.core.generic.NDFrame) for s in seqs]):
-        pass   # TODO: handle realigning indicies
-    return (np.asarray(s) for s in seqs)
+from src.utils import safe_align_sequence
 
 
 def calc_sensitivity(class_, actual, predicted):
