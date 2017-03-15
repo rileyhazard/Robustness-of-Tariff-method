@@ -4,9 +4,16 @@ import numexpr as ne
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.utils.validation import (check_X_y, check_array, check_is_fitted,
-                                      check_consistent_length)
-from sklearn.utils import resample, safe_indexing, check_random_state
+from sklearn.utils import check_random_state
+from sklearn.utils.validation import (
+    check_X_y,
+    check_array,
+    check_is_fitted,
+    check_consistent_length,
+    column_or_1d,
+)
+
+from src.utils import make_mask, is_uncertain
 
 
 class TariffClassifier(BaseEstimator, ClassifierMixin):
@@ -33,6 +40,15 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
             prediction. Values range from 0 to 100.
         redistribute (bool): redistribute undetermined predictions at the
             population level
+        spurious_associations (dict of lists): keys are causes
+            values. Lists contain labels of predictors. Tariffs for these
+            cause-symptom pairs are set to zero
+        censoring (dict of lists):
+        restrictions (dict): kwargs passed to apply_restrictions method
+        metadata (sequence): labels for columns. The first columns from the
+            test data (not the train data) are assumed to match these labels
+            and are removed from the symptoms matrix. Column values which are
+            currently used are: age, sex, region, rules.
         random_state (None, int, or np.RandomState): seed value
 
     Attributes:
@@ -41,8 +57,6 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
         symptoms_ (np.array): labels for symptoms
         causes_ (np.array): unique causes
         n_causes_ (int): number of unique causes
-        cause_prior_ (np.array): cause-specific mortality fractions of
-            the input data
         tariffs_ (dataframe): causes by symptoms tariff matrix
         X_uniform_ (np.array): samples by causes matrix of tariff scores for
             the training data which has been resampled to a uniform cause
@@ -51,9 +65,12 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
         cutoff_ranks_ (np.array): rank of cutoff values by cause
         cutoff_scores_ (np.array): scores at cutoff values
     """
+
     def __init__(self, precision=0.5, bootstraps=500, tariffs_ui=95,
                  top_n_symptoms=40, min_cause_score=0, cause_pct_cutoff=100,
-                 overall_pct_cutoff=100, redistribute=True, random_state=None):
+                 overall_pct_cutoff=100, redistribute=True, random_state=None,
+                 spurious_associations=None, metadata=None, censoring=None,
+                 restrictions=None):
         self.precision = precision
         self.bootstraps = bootstraps
         self.tariffs_ui = tariffs_ui
@@ -63,72 +80,63 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
         self.overall_pct_cutoff = overall_pct_cutoff
         self.redistribute = redistribute
         self.random_state = random_state
+        self.spurious_associations = spurious_associations or dict()
+        self.censoring = censoring or dict()
+        try:
+            self.metadata = tuple(metadata)
+        except TypeError:
+            self.metadata = ()
+        self.restrictions = restrictions
 
-    def fit(self, X, y, spurious_associations=None):
+    def fit(self, X, y):
         """Train the classifier
 
         Args:
             X (array-like): samples by symptoms matrix of binary training data
             y (list-like): true causes for each sample
-            spurious_associations (dict of lists): keys are causes
-                values. Lists contain labels of predictors. Tariffs for these
-                cause-symptom pairs are set to zero
 
         Returns:
             self
         """
-        symptoms = X.columns.copy() if isinstance(X, pd.DataFrame) else None
+        input_is_df = isinstance(X, pd.DataFrame)
+        symptoms = X.columns if input_is_df else None
+        check_X_y(X, y, dtype=None)
 
-        X, y = check_X_y(X, y)
-        X = pd.DataFrame(X, columns=symptoms, copy=True)
+        if self.metadata:
+            if input_is_df:
+                X = X.drop(list(self.metadata), axis=1)
+                symptoms = symptoms[3:]
+            else:
+                X = X[:, len(metadata):]
+
+        if symptoms is None:
+            symptoms = np.arange(X.shape[1])
+
         self.X_ = X
         self.y_ = y
-        self.symptoms_ = symptoms.tolist()
-
-        causes, counts = np.unique(y, return_counts=True)
-        self.causes_ = causes
-        self.n_causes_ = causes.shape[0]
-        self.cause_prior_ = counts / causes.shape[0]
-
         rs = check_random_state(self.random_state)
 
-        tariffs = self.calc_tariffs(X, y)
-        insig = self.calc_insignificant_tariffs(X, y, ui=self.tariffs_ui,
-                                                n=self.bootstraps,
-                                                random_state=rs)
-        tariffs[insig] = 0
+        tariffs, causes, symptoms = make_tariff_matrix(X, y, )
+        self.causes_ = causes
+        self.n_causes_ = causes.shape[0]
+        self.symptoms_ = symptoms
+        self.tariffs_ = tariffs
 
-        if spurious_associations:
-            tariffs = self.remove_spurious_associations(tariffs,
-                                                        spurious_associations)
-
-        if self.top_n_symptoms:
-            tariffs = self.keep_top_symptoms(tariffs, self.top_n_symptoms)
-
-        if self.precision:
-            tariffs = self.round_tariffs(tariffs, self.precision)
-
-        X_uniform, y_uniform = self.generate_uniform_list(X, y, tariffs,
-                                                          random_state=rs)
+        X_uniform, y_uniform = generate_uniform_list(X, y, tariffs,
+                                                     random_state=rs)
+        self.X_uniform_ = X_uniform
+        self.y_uniform_ = y_uniform
 
         cause_encoding = dict(zip(causes, range(self.n_causes_)))
         y_uniform_num = pd.Series(y_uniform).map(cause_encoding).values
-        cutoffs = self.calc_cutoffs(X_uniform, y_uniform_num,
-                                    self.cause_pct_cutoff)
+        cutoffs = calc_cutoffs(X_uniform, y_uniform_num, self.cause_pct_cutoff)
         cutoff_scores, cutoff_ranks = cutoffs
-
-        self.tariffs_ = tariffs
-        self.X_uniform_ = X_uniform
-        self.y_uniform_ = y_uniform
         self.cutoff_scores_ = cutoff_scores
         self.cutoff_ranks_ = cutoff_ranks
 
         return self
 
-    def predict(self, X, undetermined='infer', rules=None, ages=None,
-                sexes=None, restrictions=None, return_scores=False,
-                return_ranks=False, return_certain=False,
-                return_restricted=False):
+    def predict(self, X):
         """Predict for test samples
 
         If the input array is a dataframe, the predictions will be returned as
@@ -137,97 +145,64 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
 
         Args:
             X (array-like): samples by symptoms matrix of binary testing data
-            undetermined: value used for undetermined predictions. If 'infer',
-                undetermined observations will be coded as 'Undetermined' if
-                the dtype of the y-values is string or object. Otherwise it
-                will be coded as -99
-            rules (list-like): rule-based predictions for each sample or
-                np.nan for no prediction. These override the tariff predictions
-            ages (list-like): continuous age value for each sample
-            sexes (list-like): sex of each sample codes as 1=male, 2=female
-            restrictions (dict): kwargs passed to apply_restrictions method
-            return_scores (bool): see below
-            return_ranks (bool): see below
-            return_certain (bool): see below
-            return_restricted (bool): see below
 
         Returns:
             pred (list-like): individual level predictions
-            scores (array-like): samples by causes matrix of tariff scores
-            ranks (array-like): samples by causes matrix of raw ranks of test
-                data within the training data
-            certain (array-like): samples by causes matrix of ranks after
-                masking ranks below the minimum score, cause-specific cutoff
-                and overall cutoff
-            restricted (array-like): samples by causes matrix of final ranks
-                after masking both cutoffs and demographic restriction. The
-                best rank cause on this matrix is the prediction
-
         """
         check_is_fitted(self, ['tariffs_', 'X_uniform_', 'cutoff_ranks_'])
 
         input_is_df = isinstance(X, pd.DataFrame)
         df_index = X.index.copy() if input_is_df else None
 
+        if input_is_df:
+            for label in self.metadata:
+                setattr(self, label, X[label])
+            X = X.drop(list(self.metadata), axis=1)
+        else:
+            for i, label in enumerate(self.metadata):
+                setattr(self, label, X[:, i])
+            X = X[:, len(self.metadata):]
+
         X = check_array(X)
 
-        scored = self.score_samples(X, self.tariffs_)
-        ranked = self.rank_samples(scored, self.X_uniform_)
-        certain = self.mask_uncertain(scored, ranked, self.X_uniform_.shape[0],
-                                      min_score=self.min_cause_score,
-                                      cutoffs=self.cutoff_ranks_,
-                                      min_pct=self.overall_pct_cutoff)
+        if not ((X == 1) | (X == 0)).all().all():
+            raise ValueError('Some symptoms are not binary.')
 
-        certain = pd.DataFrame(certain, columns=self.causes_)
-        if input_is_df:
-            certain.index = df_index
+        scored = score_samples(X, self.tariffs_)
+        ranked = rank_samples(scored, self.X_uniform_)
+        certain = mask_uncertain(scored, ranked, self.X_uniform_.shape[0],
+                                 min_score=self.min_cause_score,
+                                 cutoffs=self.cutoff_ranks_,
+                                 min_pct=self.overall_pct_cutoff)
+        uncensored = censor_predictions(X, certain, self.censoring,
+                                        self.causes_, self.symptoms_)
+        metadata = {label: np.asarray(getattr(self, label))
+                    for label in self.metadata}
+        valid = apply_restrictions(uncensored, self.causes_, metadata,
+                                   self.restrictions)
 
-        if restrictions:
-            valid = self.apply_restrictions(certain, ages, sexes,
-                                            **restrictions)
-        else:
-            valid = certain
+        valid = pd.DataFrame(valid, df_index, self.causes_)
+        pred = valid.apply(best_ranked, axis=1)
 
-        pred = valid.apply(self.best_ranked, axis=1)
-        if np.any(np.asarray(rules)):
-            check_consistent_length(pred, rules)
-            rules = pd.Series(rules, index=pred.index)
-            pred.loc[rules.notnull()] = rules
-
-        # Series are evaluated as arrays for CCC calculations and Numpy
-        # does not handle Nans well. These should be filled.
-        if undetermined == 'infer':
-            non_numerics = [np.string_, np.unicode_, np.object_]
-            if self.causes_.dtype.type in non_numerics:
-                fill_val = 'Undetermined'
-            else:
-                fill_val = -99
-        else:
-            fill_val = undetermined
-        pred = pred.fillna(fill_val)
+        rules = getattr(self, 'rules', np.full(X.shape[0], np.nan))
+        rules = pd.Series(rules, df_index)
+        pred[rules.notnull()] = rules
 
         if input_is_df:
-            scored = pd.DataFrame(scored, index=df_index, columns=self.causes_)
-            ranked = pd.DataFrame(ranked, index=df_index, columns=self.causes_)
-        else:
-            pred = pred.values
-            certain = certain.values
-            valid = valid.values
+            scored = pd.DataFrame(scored, df_index, self.causes_)
+            ranked = pd.DataFrame(ranked, df_index, self.causes_)
+            certain = pd.DataFrame(certain, df_index, self.causes_)
+            uncensored = pd.DataFrame(uncensored, df_index, self.causes_)
+            valid = pd.DataFrame(valid, df_index, self.causes_)
+            pred = pd.Series(pred, df_index, name='prediction')
 
-        out = [pred]
-        if return_scores:
-            out.append(scored)
-        if return_ranks:
-            out.append(ranked)
-        if return_certain:
-            out.append(certain)
-        if return_restricted:
-            out.append(valid)
+        self.scored_ = scored
+        self.ranked_ = ranked
+        self.certain_ = certain
+        self.valid_ = valid
+        self.pred_ = pred
 
-        if len(out) == 1:
-            return out[0]
-        else:
-            return tuple(out)
+        return pred
 
     def predict_csmf(self, X):
         """Predict cause-specific mortality fractions
@@ -248,367 +223,495 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
 
         return csmf
 
-    def calc_tariffs(self, X, y):
-        """Calculate the tariffs for all cause-symptom pairs
 
-        Args:
-            X: (array-like) samples by symptoms matrix of binaries
-            y: (list-like): causes for each sample
+def calc_tariffs(X, y):
+    """Calculate the tariffs for all cause-symptom pairs
 
-        Returns:
-            tariffs (dataframe)
-        """
-        df = pd.DataFrame(X, copy=True)
-        if not df.isin([0, 1]).all().all():
-            raise ValueError("Some symptoms are not binary")
-        endorsements = df.groupby(y).mean()
-        endorsements.index.name = 'cause'
+    Args:
+        X (matrix-like): samples by symptoms matrix of binaries
+        y (list-like): causes for each sample
 
-        return endorsements.apply(self.tariff_from_endorsements, axis=0)
+    Returns:
+        tariffs (np.array or dataframe)
+    """
+    check_X_y(X, y, dtype=None)
+    if not ((X == 1) | (X == 0)).all().all():
+        raise ValueError('Some symptoms are not binary.')
 
-    @staticmethod
-    def tariff_from_endorsements(series):
-        """Calculate tariffs from a series of endorsement rates
+    tariffs = pd.DataFrame(X).groupby(y).mean() \
+                .apply(tariffs_from_endorsements, axis=0, raw=True)
 
-        Args:
-            series: endorsement rates
+    if isinstance(X, pd.DataFrame):
+        tariffs.index.name = 'causes'
+        tariffs.columns.name = 'symptoms'
+    else:
+        tariffs = tariffs.values
+    return tariffs
 
-        Returns:
-            series: tariff scores
-        """
-        pct25, median, pct75 = np.percentile(series, [25, 50, 75])
-        iqr = pct75 - pct25 or 0.001
-        return ne.evaluate("(series - median) / iqr")
 
-    def calc_insignificant_tariffs(self, X, y, n=500, ui=95,
-                                   random_state=None):
-        """Bootstrap symptom data to determine which tariffs are signficant
+def tariffs_from_endorsements(arr):
+    """Calculate tariffs from a array of endorsement rates
 
-        Tariff values for insignificant tariffs are set to zero. This is
-        determined by bootstrapping the input data 'n' times and recalculating
-        the tariff matrix for each draw. If the uncertainty interval for a
-        given cause-symptom pair across the bootstraps include zero the tariff
-        is insignificant. The bootstraps are only used to determine
-        significance.The tariff value is from the original input data, not the
-        mean across bootstrap draws.
+    Args:
+        arr (np.array): endorsement rates
 
-        Args:
-            X: (array-like) samples by symptoms matrix of binaries
-            y: (list-like): causes for each sample
-            n: (int) number of bootstraps
-            ui: (float) uncertainty interval between 0 and 100
-            random_state (None, int, np.RandomState): seed
+    Returns:
+        tariff values (np.array)
+    """
+    pct25, median, pct75 = np.percentile(arr, [25, 50, 75])
+    iqr = pct75 - pct25 or 0.001
+    return ne.evaluate("(arr - median) / iqr")
 
-        Returns:
-            insigificance (dataframe): booleans where true indicates
-                the tariff is insignificant
-        """
-        if hasattr(X, 'columns'):
-            symptoms = X.columns
-        else:
-            symptoms = np.arange(X.shape[1])
-        X, y = check_X_y(X, y)
-        if not np.all((X == 1) | (X == 0)):
-            raise ValueError("Not all values of X are binary")
 
-        causes, counts = np.unique(y, return_counts=True)
-        y_new = np.repeat(causes, counts)
-        mask = {cause: y == cause for cause in causes}
+def boostrap_endorsements_by_causes(X, y, bootstraps=500, random_state=None):
+    """
 
-        bootstraps = list()
-        for _ in range(n):
-            X_new = np.vstack([resample(X.compress(mask[cause], 0))
-                               for cause in causes])
-            tariffs = pd.DataFrame(X_new).groupby(y_new).mean() \
-                        .apply(self.tariff_from_endorsements, raw=True)
-            bootstraps.append(tariffs.values)
 
-        insig = np.apply_along_axis(self._is_uncertain, 2,
-                                    np.dstack(bootstraps), ui=ui)
+    Returns:
+        (dataframe): endorsement rates multi-indexed by cause and draw
+    """
+    check_X_y(X, y, dtype=None)
+    if not np.all((X == 1) | (X == 0)):
+        raise ValueError('Some symptoms are not binary.')
+    rs = check_random_state(random_state)
 
-        # ndarrays cannot be used as masks for dataframes, so the array must
-        # be converted into a dataframe with axes aligned with the tariffs
-        # dataframe
-        return pd.DataFrame(insig, index=causes, columns=symptoms)
+    def bootstrapped_endorsements(df):
+        n_samples = df.shape[0] * bootstraps
+        return df.iloc[rs.randint(df.shape[0], size=n_samples)] \
+                 .groupby(np.repeat(np.arange(bootstraps), df.shape[0])).mean()
 
-    @staticmethod
-    def _is_uncertain(arr, ui=95):
-        """Returns True if the uncertainty interval of the array contains zero
+    endorsements = pd.DataFrame(X).groupby(y).apply(bootstrapped_endorsements)
+    endorsements.index.names = ('cause', 'draw')
 
-        Args:
-            arr (list-like): sequence of values
-            ui: (float) uncertainty interval between 0 and 100
+    return endorsements
 
-        Returns:
-            (bool)
-        """
-        tail = (100 - ui) / 2
-        lower, upper = tuple(np.percentile(arr, [tail, 100 - tail]))
-        return lower < 0 and upper > 0
 
-    def round_tariffs(self, tariffs, p=0.5):
-        """Round tariffs to a given precision
+def calc_insignificant_tariffs(X, y, bootstraps=500, ui=(2.5, 97.5),
+                               random_state=None):
+    """Bootstrap symptom data to determine which tariffs are signficant
 
-        Args:
-            tariffs (dataframe): causes by symptoms matrix of tariffs
-            p (float): precision for rounding
+    Tariff values for insignificant tariffs are set to zero. This is
+    determined by bootstrapping the input data 'n' times and recalculating
+    the tariff matrix for each draw. If the uncertainty interval for a
+    given cause-symptom pair across the bootstraps include zero the tariff
+    is insignificant. The bootstraps are only used to determine
+    significance.The tariff value is from the original input data, not the
+    mean across bootstrap draws.
 
-        Returns:
-            tariffs (dataframe): rounded tariff values
-        """
-        return tariffs.applymap(lambda x: round(x / p) * p)
+    Args:
+        X: (matrix-like) samples by symptoms matrix of binaries
+        y: (list-like): causes for each sample
+        n: (int) number of bootstraps
+        ui: (float) uncertainty interval between 0 and 100
+        random_state (None, int, np.RandomState): seed
 
-    def remove_spurious_associations(self, tariffs, spurious):
-        """Remove specified spurious associations from tariff matrix
+    Returns:
+        insigificance (dataframe): booleans where true indicates
+            the tariff is insignificant
+    """
+    input_is_df = isinstance(X, pd.DataFrame)
 
-        Args:
-            tariffs (dataframe):causes by symptoms matrix of tariffs
-            spurious (dict): keys are causes, values are lists of symptoms
+    if len(ui) != 2:
+        raise ValueError('"ui" must be a 2-tuple of floats')
+    ui = sorted(ui)
 
-        Returns:
-            tariffs (dataframe): a copy of the tariff matrix with spurious
-                associations set to zero
-        """
-        valid = tariffs.copy()
-        for cause, associations in spurious.items():
-            if cause not in self.causes_:
-                continue
-            for symp in associations:
-                if symp not in self.symptoms_:
-                    continue
-                valid.loc[cause, symp] = 0
-        return valid
+    endorsements = boostrap_endorsements_by_causes(X, y, bootstraps,
+                                                   random_state)
+    symptom_names = endorsements.columns.name or 2
+    insignif = endorsements.stack().groupby(level=('draw', symptom_names)) \
+                           .apply(is_uncertain, ui=ui).unstack()
 
-    def keep_top_symptoms(self, tariffs, top_n=40):
-        """Calculate the top N tariff values for each cause
+    if not input_is_df:
+        insignif = insignif.values
+    return insignif
 
-        Args:
-            tariffs (dataframe): causes by symptoms matrix of tariffs
-            top_n (int): number of values to keep
 
-        Returns
-            tariffs (dataframe): causes by symptoms tariff matrix with values
-                under the top N set to zero
-        """
-        return tariffs.apply(self._keep_top_n, n=top_n, axis=1)
+def round_tariffs(tariffs, p=0.5):
+    """Round tariffs to a given precision
 
-    @staticmethod
-    def _keep_top_n(tariffs, n):
-        """Calculate the top N tariff values for a single cause
+    Args:
+        tariffs (dataframe): causes by symptoms matrix of tariffs
+        p (float): precision for rounding
 
-        Args:
-            tariffs (series): symptoms for a single cause
-            n (int): number of values to keep
+    Returns:
+        tariffs (dataframe): rounded tariff values
+    """
+    arr = check_array(tariffs)
+    arr = np.apply_over_axes(lambda x, a: np.round(x / p) * p, arr, 1)
+    if isinstance(tariffs, pd.DataFrame):
+        arr = pd.DataFrame(arr, tariffs.index, tariffs.columns)
+    return arr
 
-        Returns
-            tariffs (series): symptoms for a single cause with values under the
-                top N set to zero
-        """
-        if len(tariffs) <= n:
-            return tariffs
-        cutoff = tariffs.abs().sort_values(ascending=False).iloc[n - 1]
-        tariffs[tariffs.abs() < cutoff] = 0
-        return tariffs
 
-    def score_samples(self, X, tariffs):
-        """Determine tariff score by cause from symptom data
+def remove_spurious_associations(tariffs, spurious, causes=None,
+                                 symptoms=None):
+    """Remove specified spurious associations from tariff matrix
 
-        Args:
-            X (array-like) samples by symptoms matrix of binaries
-            tariffs (array-like): causes by symptoms matrix of tariffs
+    Args:
+        tariffs (dataframe):causes by symptoms matrix of tariffs
+        spurious (dict): keys are causes, values are lists of symptoms
 
-        Returns:
-            scored (np.array): samples by tariff matrix of tariff scores
-        """
-        X = check_array(X)
-        tariffs = check_array(tariffs)
-        scored = X[:, :, np.newaxis] * tariffs.T[np.newaxis, :, :]
-        return np.apply_along_axis(np.sum, 1, scored)
+    Returns:
+        tariffs (dataframe): a copy of the tariff matrix with spurious
+            associations set to zero
+    """
+    arr = check_array(tariffs, copy=True)
+    if causes is None:
+        causes = np.arange(tariffs.shape[0])
+    if symptoms is None:
+        symptoms = np.arange(tariffs.shape[1])
 
-    def generate_uniform_list(self, X, y, tariffs, n=None, random_state=None):
-        """Create an array of resampled data with even an target distribution
+    mask = make_mask(spurious, symptoms, causes).T
+    arr[mask] = 0
 
-        Args:
-            X (array-like) samples by symptoms matrix of binaries
-            y (list-like) causes for each sample
-            tariffs (array-like) causes by symptoms matrix of tariffs
-            n (int): number of samples per cause. Defaults to the number
-                of the most common cause in `y`
+    if isinstance(tariffs, pd.DataFrame):
+        arr = pd.DataFrame(arr, tariffs.index, tariffs.columns)
+    return arr
 
-        Returns:
-            X_uniform (np.array): samples by causes matrix of tariff scores
-            y_uniform (np.array): causes for each sample
-        """
-        X, y = check_X_y(X, y)
-        tariffs = check_array(tariffs)
-        causes, causes_counts = np.unique(y, return_counts=True)
 
-        scored = self.score_samples(X, tariffs)
-        if n is None:
-            n = np.max(causes_counts)
-        X_uniform, y_uniform = [], []
-        for cause in causes:
-            X_uniform.append(resample(scored[y == cause], n_samples=n,
-                                      random_state=random_state))
-            y_uniform.append(np.full(n, cause, dtype=y.dtype))
-        return check_X_y(np.vstack(X_uniform), np.concatenate(y_uniform))
+def keep_top_symptoms(tariffs, top_n=40):
+    """Replace tariffs below the top N with a value of zero
 
-    def calc_cutoffs(self, X, y, q=95):
-        """Determine the minimum score and rank need for each cause
+    Args:
+        tariffs (dataframe): causes by symptoms matrix of tariffs
+        top_n (int): number of values to keep
 
-        The cause-specific cutoff is determined as rank within the entire
-        uniformly resampled training data of the observation which has a score
-        at the qth percentile by cause. The given cause is not a valid
-        prediction for test observations which are ranked below this rank. If
-        the given percentile is 100
+    Returns
+        tariffs (dataframe): causes by symptoms tariff matrix with values
+            under the top N set to zero
+    """
+    arr = check_array(tariffs)
 
-        Args:
-            X (array-like): samples by causes matrix of tariff scores
-            y (list-like): causes for each sample
-            q (float): percentile used as cutoff between 0 and 100
+    if tariffs.shape[1] > top_n:
+        arr[arr < np.partition(np.abs(arr), -top_n, 1)[:, -top_n, None]] = 0
 
-        Returns:
-            cutoffs (np.array): cutoff for each cause
-        """
-        X, y = check_X_y(X, y)
+    if isinstance(tariffs, pd.DataFrame):
+        arr = pd.DataFrame(arr, index=tariffs.index, columns=tariffs.columns)
+    return arr
 
-        # Mergesort is needed for backwards compatibility with SmartVA
-        # See regression testing for more details
-        X_sorted = X.argsort(0, kind='mergesort')[::-1]
 
-        ranks, scores = [], []
-        for j in range(X.shape[1]):
-            ranks_j = np.where(y[X_sorted[:, j]] == j)[0] + 1
-            rank = np.percentile(ranks_j, q, interpolation='higher')
-            ranks.append(rank)
-            scores.append(X[rank - 1, j])
+def make_tariff_matrix(X, y, bootstraps=500, ui=(2.5, 97.5), random_state=None,
+                       spurious=None, top_n=40, precision=0.5):
+    """Fully process raw symptom data to create a tariff matrix.
 
-        return scores, ranks
+    Args:
 
-    def rank_samples(self, X_test, X_train):
-        """Determine rank of test samples within training data
+    Returns:
+        tariffs (np.array or dataframe): causes by symptoms matrix of tariffs
+        causes (np.array): cause labels as ordered in the tariffs matrix
+        symptoms (np.array): symptoms labels as ordered in tariff matrix.
+    """
+    input_is_df = isinstance(X, pd.DataFrame)
+    symptoms = X.columns if input_is_df else None
+    X, y = check_X_y(X, y, dtype=None)
+    if symptoms is None:
+        symptoms = np.arange(X.shape[1])
 
-        Args:
-            X_test (array-like): samples by causes matrix of tariff scores
-            X_train (array-like): samples by causes matrix of tariff scores
+    causes = np.unique(y)
+    tariffs = calc_tariffs(X, y)
+    insig = calc_insignificant_tariffs(X, y, ui=ui, bootstraps=bootstraps,
+                                       random_state=random_state)
+    tariffs[insig] = 0
 
-        Returns:
-            ranked (np.array): samples by causes matrix of ranks within the
-                training data for each sample in the test data
-        """
-        X_test = check_array(X_test)
-        X_train = check_array(X_train)
+    if spurious:
+        tariffs = remove_spurious_associations(tariffs, spurious)
 
-        lower = X_test[:, :, np.newaxis] < X_train.T[np.newaxis, :, :]
-        lower = np.apply_along_axis(np.sum, 2, lower)
+    if top_n:
+        tariffs = keep_top_symptoms(tariffs, top_n)
 
-        higher = X_test[:, :, np.newaxis] > X_train.T[np.newaxis, :, :]
-        higher = np.apply_along_axis(np.sum, 2, higher)
+    if precision:
+        tariffs = round_tariffs(tariffs, precision)
 
-        return (lower + (X_train.shape[0] - higher)) / 2 + 0.5
+    if input_is_df:
+        tariffs = pd.DataFrame(tariffs, causes, symptoms)
 
-    def mask_uncertain(self, X_scores, X_ranks, train_n, min_score=0,
-                       cutoffs=None, min_pct=100):
-        """Mask ranks of observations which have too little information
+    return tariffs, causes, symptoms
 
-        Args:
-            X_scores (array-like): samples by causes matrix of tariff scores
-            X_ranks (array-like): samples by causes matrix of ranks
-            train_n (int): number of observations in the training data
-            min_score (float): minimum tariff score need before a given cause
-                can be consider a valid prediction for a sample
-            cutoffs (list-like): cutoff rank for each cause
-            min_pct (float): percentile of training observations
 
-        Returns:
-            X_test_ranks (np.array): copy of ranks matrix with uncertain
-                values set to 0.5 more than train_n
-        """
-        X_scores = check_array(X_scores)
-        valid = check_array(X_ranks, copy=True)
+def score_samples(X, tariffs):
+    """Determine tariff score by cause from symptom data
 
-        overall_cutoff = train_n * min_pct / 100
-        worst_rank = np.nan
+    Args:
+        X (array-like) samples by symptoms matrix of binaries
+        tariffs (array-like): causes by symptoms matrix of tariffs
 
-        if cutoffs:
-            valid[X_ranks > np.asarray(cutoffs)] = worst_rank
-        valid[X_scores <= np.asarray(min_score)] = worst_rank
-        valid[X_ranks > np.asarray(overall_cutoff)] = worst_rank
+    Returns:
+        scored (np.array): samples by tariff matrix of tariff scores
+    """
+    input_is_df = isinstance(X, pd.DataFrame)
+    df_index = X.index if input_is_df else None
+    causes = tariffs.index if isinstance(tariffs, pd.DataFrame) else None
 
-        return valid
+    X = check_array(X)
+    tariffs = check_array(tariffs)
+    scored = X[:, :, None] * tariffs.T[None, :, :]
+    summed = np.apply_along_axis(np.sum, 1, scored)
 
-    def apply_restrictions(self, X, ages, sexes, min_age=None, max_age=None,
-                           males_only=None, females_only=None, regional=None,
-                           ad_hoc=None):
-        """Set restricted causes to the lowest rank
+    if input_is_df:
+        summed = pd.DataFrame(summed, df_index, causes)
 
-        Args:
-            X (dataframe): samples by causes matrix of tariff ranks
-            ages (list-like): continuous age value for each sample
-            sexes (list-like): sex of each sample codes as 1=male, 2=female
-            min_age (list): tuples of (treshold, list of causes)
-            max_age (list): tuples of (threshold, list of causes)
-            males_only (list): causes which only occur in males
-            females_only (list): causes which only occur in females
-            regional (list): causes which appear in the training data, but
-                are known to not occur in the prediction data
-            ad_hoc (list): tuples of (cause, mask) the cause will be restricted
-                where the mask is True
+    return summed
 
-        Returns:
-            X_valid (np.array): A copy of X with restricted combinations
-                set to the worst possible rank
-        """
-        check_consistent_length(X, ages, sexes)
-        check_array(X)
-        X = X.copy()
-        ages, sexes = np.asarray(ages), np.asarray(sexes)
-        worst_rank = np.max(X.values)
 
-        if min_age:
-            for threshold, causes in min_age:
-                causes = list(set(causes).intersection(self.causes_))
-                X.loc[ages < threshold, causes] = worst_rank
-        if max_age:
-            for threshold, causes in max_age:
-                causes = list(set(causes).intersection(self.causes_))
-                X.loc[ages > threshold, causes] = worst_rank
-        if males_only:
-            causes = list(set(males_only).intersection(self.causes_))
-            X.loc[sexes == 2, causes] = worst_rank
-        if females_only:
-            causes = list(set(females_only).intersection(self.causes_))
-            X.loc[sexes == 1, causes] = worst_rank
-        if regional:
-            X.loc[:, regional] = worst_rank
-        if ad_hoc:
-            for cause, condition in ad_hoc:
-                if cause in self.causes_:
-                    X.loc[condition, cause] = worst_rank
+def generate_uniform_list(X, y, tariffs, n_samples=None, random_state=None):
+    """Create an array of resampled data with even an target distribution
 
-        return X
+    Args:
+        X (array-like) samples by symptoms matrix of binaries
+        y (list-like) causes for each sample
+        tariffs (array-like) causes by symptoms matrix of tariffs
+        n_samples (int): number of samples per cause. Defaults to the number
+            of the most common cause in `y`
 
-    @staticmethod
-    def best_ranked(series):
-        """Determine best ranked prediction from a series of ranks"""
-        if series.notnull().any():
-            return series.dropna().sort_values().first_valid_index()
-        else:
-            return np.nan
+    Returns:
+        X_uniform (np.array): samples by causes matrix of tariff scores
+        y_uniform (np.array): causes for each sample
+    """
+    input_is_df = isinstance(X, pd.DataFrame)
+    df_index = X.index if input_is_df else None
 
-    def get_undetermined_proportions(self):
-        """Return proportions used to redistribute the undetermined CSMF"""
-        # TODO: bring in external CSMF data
-        # For now just redistribute evenly
-        return pd.Series(np.full(self.n_causes_, 1 / self.n_causes_),
-                         index=self.causes_)
+    X, y = check_X_y(X, y, dtype=None)
+    tariffs = check_array(tariffs)
+    rs = check_random_state(random_state)
+    causes, counts = np.unique(y, return_counts=True)
 
-    def redistribution(self, csmf, proportions):
-        """Redistribute the undetermined predictions at the population level
-        """
-        predicted = csmf.drop(np.nan)
-        undetermined = proportions * csmf.loc[np.nan]
-        return pd.concat([predicted, undetermined]).groupby(level=0).sum()
+    scored = score_samples(X, tariffs)
+
+    if n_samples is None:
+        n_samples = np.max(counts)
+
+    idx = np.concatenate([rs.choice(np.where(y == cause)[0], n_samples)
+                          for cause in causes])
+    X_uniform = scored[idx]
+    y_uniform = np.repeat(causes, n_samples)
+
+    if input_is_df:
+        new_index = df_index[idx]
+        X_uniform = pd.DataFrame(X_uniform, new_index, causes)
+        y_uniform = pd.Series(y_uniform, new_index)
+
+    return X_uniform, y_uniform
+
+
+def calc_cutoffs(X, y, cutoff=95):
+    """Determine the minimum score and rank need for each cause
+
+    The cause-specific cutoff is determined as rank within the entire
+    uniformly resampled training data of the observation which has a score
+    at the qth percentile by cause. The given cause is not a valid
+    prediction for test observations which are ranked below this rank. If
+    the given percentile is 100
+
+    Args:
+        X (array-like): samples by causes matrix of tariff scores
+        y (list-like): causes for each sample
+        cutoff (float): percentile used as cutoff between 0 and 100
+
+    Returns:
+        cutoffs (np.array): cutoff for each cause
+    """
+    input_is_df = isinstance(X, pd.DataFrame)
+    causes = X.columns if input_is_df else None
+
+    X, y = check_X_y(X, y)
+
+    # Mergesort is needed for backwards compatibility with SmartVA
+    # See regression testing for more details. Stable sorting prevents
+    # variation in the cause rankings which could lead to discrepancies
+    # between predictions using the same data
+    X_sorted = X.argsort(0, kind='mergesort')[::-1]
+
+    ranks, scores = [], []
+    for j in range(X.shape[1]):
+        ranks_j = np.where(y[X_sorted[:, j]] == j)[0] + 1
+        rank = np.percentile(ranks_j, cutoff, interpolation='higher')
+        ranks.append(rank)
+        scores.append(X[rank - 1, j])
+
+    if input_is_df:
+        scores = pd.Series(scores, causes)
+        ranks = pd.Series(ranks, causes)
+    else:
+        scores = np.array(scores)
+        ranks = np.array(ranks)
+
+    return scores, ranks
+
+
+def rank_samples(X_test, X_train):
+    """Determine rank of test samples within training data
+
+    Args:
+        X_test (array-like): samples by causes matrix of tariff scores
+        X_train (array-like): samples by causes matrix of tariff scores
+
+    Returns:
+        ranked (np.array): samples by causes matrix of ranks within the
+            training data for each sample in the test data
+    """
+    input_is_df = isinstance(X_test, pd.DataFrame)
+    df_index = X_test.index if input_is_df else None
+    causes = X_test.columns if input_is_df else None
+
+    X_test = check_array(X_test)
+    X_train = check_array(X_train)
+
+    X_test_3d = X_test[:, :, None]
+    X_train_3d = X_train.T[None, :, :]
+
+    lower = np.apply_along_axis(np.sum, 2, X_test_3d < X_train_3d)
+    higher = np.apply_along_axis(np.sum, 2, X_test_3d > X_train_3d)
+
+    ranked = (lower + (X_train.shape[0] - higher)) / 2 + 0.5
+
+    if input_is_df:
+        ranked = pd.DataFrame(ranked, df_index, causes)
+
+    return ranked
+
+
+def mask_uncertain(X_scores, X_ranks, train_n=np.inf, min_score=0,
+                   cutoffs=None, min_pct=100):
+    """Mask ranks of observations which have too little information
+
+    Args:
+        X_scores (array-like): samples by causes matrix of tariff scores
+        X_ranks (array-like): samples by causes matrix of ranks
+        train_n (int): number of observations in the training data
+        min_score (float): minimum tariff score need before a given cause
+            can be consider a valid prediction for a sample
+        cutoffs (list-like): cutoff rank for each cause
+        min_pct (float): percentile of training observations
+
+    Returns:
+        X_test_ranks (np.array): copy of ranks matrix with uncertain
+            values set to 0.5 more than train_n
+    """
+    input_is_df = isinstance(X_ranks, pd.DataFrame)
+    df_index = X_ranks.index if input_is_df else None
+    causes = X_ranks.columns if input_is_df else None
+
+    X_scores = check_array(X_scores)
+    valid = check_array(X_ranks, copy=True, force_all_finite=False)
+
+    overall_cutoff = train_n * min_pct / 100
+    if cutoffs is not None:
+        valid[X_ranks > np.asarray(cutoffs)] = np.nan
+    valid[X_scores <= np.asarray(min_score)] = np.nan
+    valid[X_ranks > np.asarray(overall_cutoff)] = np.nan
+
+    if input_is_df:
+        valid = pd.DataFrame(valid, df_index, causes)
+
+    return valid
+
+
+def censor_predictions(X, X_ranks, censor, causes, symptoms):
+    """Calculate a mask of which cells should be censored.
+
+    Args:
+        X (matrix-like): samples by predictors matrix of binaries
+        censor (dict of lists)
+        causes (list-like): sequence of outcome labels
+        symptoms (list-like): sequence of predictor labels
+
+    Returns:
+        censored (np.array) 2D boolean array of samples by causes where
+            True indiciates a cell should be censored.
+    """
+    input_is_df = isinstance(X_ranks, pd.DataFrame)
+    df_index = X_ranks.index if input_is_df else None
+
+    X = check_array(X)
+    if not np.all((X == 1) | (X == 0)):
+        raise ValueError('Some symptoms are not binary.')
+    uncensored = check_array(X_ranks, copy=True, force_all_finite=False)
+    check_consistent_length(X, X_ranks)
+    mask = make_mask(censor, symptoms, causes)
+    censored = (X.astype(bool)[:, :, None] & mask[None, :, :]).any(2)
+    uncensored[censored] = np.nan
+
+    if input_is_df:
+        uncensored = pd.DataFrame(uncensored, df_index, causes)
+
+    return uncensored
+
+
+def apply_restrictions(X, causes, metadata=None, restrictions=None):
+    """Mask restricted causes based on demographics
+
+    Args:
+        X (dataframe): samples by causes matrix of tariff ranks
+        ages (list-like): continuous age value for each sample
+        sexes (list-like): sex of each sample codes as 1=male, 2=female
+        min_age (list): tuples of (treshold, list of causes)
+        max_age (list): tuples of (threshold, list of causes)
+        males_only (list): causes which only occur in males
+        females_only (list): causes which only occur in females
+        regional (list): causes which appear in the training data, but
+            are known to not occur in the prediction data
+        censored (matrix-like): mask indicating which cells should be censored
+
+    Returns:
+        X_valid (np.array): A copy of X with restricted combinations
+            set to the worst possible rank
+    """
+    input_is_df = isinstance(X, pd.DataFrame)
+    df_index = X.index if input_is_df else None
+
+    X = check_array(X, copy=True, force_all_finite=False)
+    restrictions = restrictions or dict()
+    metadata = metadata or dict()
+    ages = metadata.get('age', np.full(X.shape[0], np.nan))
+    sexes = metadata.get('sex', np.zeros(X.shape[0]))
+    regions = metadata.get('region', np.full(X.shape[0], np.nan))
+    check_consistent_length(X, ages, sexes, regions)
+    ages = column_or_1d(ages)
+    sexes = column_or_1d(sexes)
+    regions = column_or_1d(regions)
+
+    for thre, labels in restrictions.get('min_age', []):
+        X[(ages < thre)[:, None] & np.in1d(causes, labels)] = np.nan
+
+    for thre, labels in metadata.get('max_age', []):
+        X[(ages > thre)[:, None] & np.in1d(causes, labels)] = np.nan
+
+    males_only = restrictions.get('males_only', [])
+    X[(sexes == 2)[:, None] & np.in1d(causes, males_only)] = np.nan
+
+    females_only = restrictions.get('females_only', [])
+    X[(sexes == 1)[:, None] & np.in1d(causes, females_only)] = np.nan
+
+    for r, labels in restrictions.get('regions', []):
+        X[(regions == r)[:, None] & np.in1d(causes, labels)] = np.nan
+
+    if input_is_df:
+        pd.DataFrame(X, df_index, causes)
+
+    return X
+
+
+def best_ranked(series):
+    """Determine best ranked prediction from a series of ranks"""
+    if series.notnull().any():
+        return series.dropna().sort_values().first_valid_index()
+    else:
+        return np.nan
+
+
+def get_undetermined_proportions(causes):
+    """Return proportions used to redistribute the undetermined CSMF"""
+    # TODO: bring in external CSMF data
+    # For now just redistribute evenly
+    return pd.Series(np.full(len(causes), 1 / len(causes)), index=causes)
+
+
+def redistribution(csmf, proportions):
+    """Redistribute the undetermined predictions at the population level
+    """
+    predicted = csmf.drop(np.nan)
+    undetermined = proportions * csmf.loc[np.nan]
+    return pd.concat([predicted, undetermined]).groupby(level=0).sum()
 
 
 if __name__ == '__main__':
