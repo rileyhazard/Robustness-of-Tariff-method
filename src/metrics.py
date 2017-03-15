@@ -230,6 +230,8 @@ def calc_csmf_accuracy_from_csmf(actual, predicted):
         float
     """
     actual, predicted = safe_align_sequences(actual, predicted)
+    if not np.allclose(actual.sum(), predicted.sum(), 1):
+        raise ValueError('CSMFs must sum to 1.')
     abs_error = np.abs(actual - predicted).sum()
     return 1 - abs_error / (2 * (1 - actual.min()))
 
@@ -246,8 +248,8 @@ def calc_csmf_accuracy(actual, predicted):
         float
     """
     actual, predicted = safe_align_sequences(actual, predicted)
-    csmf_pred = pd.Series(predicted).value_counts() / float(len(predicted))
-    csmf_true = pd.Series(actual).value_counts() / float(len(actual))
+    csmf_pred = pd.Series(predicted).value_counts(dropna=False) / len(actual)
+    csmf_true = pd.Series(actual).value_counts(dropna=False) / len(actual)
 
     # Drop causes in the prediction which do not appear in the actual
     csmf_pred = csmf_pred.loc[csmf_true.index].fillna(0)
