@@ -1,72 +1,29 @@
-import inspect
-from warnings import warn
+from __future__ import division, print_function
 
 import numpy as np
 import pandas as pd
-from sklearn.dummy import DummyClassifier
+from sklearn.model_selection import StratifiedShuffleSplit, LeavePGroupsOut
 from sklearn.utils import resample, safe_indexing
+from sklearn.utils.validation import check_X_y
 
-from performance import calc_ccc, calc_csmf_accuracy, correct_csmf_accuracy
-
-
-class RandomClassifier(DummyClassifier):
-    """Classifier to generate predictions uniformly at random
-
-    Attributes:
-        trained (dataframe): learned association between symptom/cause pairs
-    """
-    def __init__(self, random_state=None, **kwargs):
-        self.strategy = 'uniform'
-        self.constant = 1
-
-        # Allow setting any random parameters to test classifier setters
-        # and pass silently if given unused parameters. This behavior
-        # matches the other classifiers
-        args, _, _, argvalues = inspect.getargvalues(inspect.currentframe())
-        argvalues.pop('self')
-        argvalues.update(argvalues.pop('kwargs'))
-        args.pop(0)
-        for arg, val in argvalues.items():
-            if arg not in args:
-                warn("Setting unknown parameter: '{}'".format(arg))
-            setattr(self, arg, val)
-
-    @property
-    def trained(self):
-        probs = self.predict_proba(np.ones((1, len(self.classes_))))[0]
-        return pd.DataFrame(probs, index=self.classes_,
-                            columns=['probability'])
-
-    def predict(self, X):
-        """Perform classification on test X.
-
-        This overrides the default behavior by of Sklearn classifiers by
-        returning both individual and population level predictions. This is
-        necessary because other classifiers estimate population distributions
-        in a manner slightly de-coupled from individual predictions.
-
-        Args:
-            X (array-like): samples by features to test
-
-        Returns:
-            predictions (series): individual level prediction
-            csmf: (series): population level predictions
-        """
-        pred = super(RandomClassifier, self).predict(X)
-        indiv = pd.Series(pred, index=X.index)
-        csmf = indiv.value_counts() / float(len(indiv))
-        return indiv, csmf
+from src.metrics import (
+    calc_ccc,
+    calc_csmf_accuracy_from_csmf,
+    correct_csmf_accuracy
+)
 
 
 def prediction_accuracy(clf, X_train, y_train, X_test, y_test, aggregate=None,
                         resample_test=True, resample_size=1):
-    """Mesaure prediction accuracy of a classifier
+    """Mesaure prediction accuracy of a classifier.
 
     Args:
-        clf: sklearn-like classifier object
-        X_train (array-like): samples by features matrix used for training
+        clf: sklearn-like classifier object. It must implement a fit method
+            with the signature ``(X, y) --> self`` and a predict method with
+            a signature ``X --> y``
+        X_train (matrix-like): samples by features matrix used for training
         y_train (list-like): target values used for training
-        X_test (array-like): samples by features matrix used for testing
+        X_test (matrix-like): samples by features matrix used for testing
         y_test (list-like): target values to compare predictions against
         aggregate (dict): mapping of classes to new classes. Applied
             to the predictions before calculating performance.
@@ -84,101 +41,137 @@ def prediction_accuracy(clf, X_train, y_train, X_test, y_test, aggregate=None,
         ccc (dataframe): chance-correct concordance for each cause in one row
         accuracy (dataframe): summary accuracy measures in one row
     """
+    check_X_y(X_train, y_train, dtype=None)
+    check_X_y(X_test, y_test, dtype=None)
+
     if resample_test:
         n_samples = round(resample_size * len(X_test))
         X_test, y_test = dirichlet_resample(X_test, y_test, n_samples)
 
-    y_pred, csmf_pred = clf.fit(X_train, y_train).predict(X_test)
+    y_pred = clf.fit(X_train, y_train).predict(X_test)
+    y_pred = pd.Series(y_pred)
+
+    # Some classifier (like Tariff and InSilicoVA) calculate population level
+    # estimates in a manner slightly decoupled from the individual
+    # predictions. If this is  the case, use these estimates instead of
+    # collapsing individual predictions.
+    if hasattr(clf, 'csmf'):
+        csmf_pred = clf.csmf
+    else:
+        csmf_pred = y_pred.value_counts() / len(y_pred)
 
     y_actual = pd.Series(y_test)
+
     if aggregate:
-        y_pred = y_pred.map(aggregate)
-        y_actual = y_actual.map(aggregate)
-        csmf_pred.index = csmf_pred.index.to_series().map(aggregate)
+        y_pred = y_pred.replace(aggregate)
+        y_actual = y_actual.replace(aggregate)
+        csmf_pred.index = csmf_pred.index.to_series().replace(aggregate)
         csmf_pred = csmf_pred.groupby(level=0).sum()
-    csmf_actual = y_actual.value_counts() / float(len(y_actual))
+
+    csmf_actual = y_actual.value_counts() / len(y_actual)
+
+    # Undetermined individual predictions are coded as nan and are dropped
+    # by value_count. Rescale the total predicted csmf to be 1.
+    csmf_pred = csmf_pred / csmf_pred.sum()
+    assert np.allclose(csmf_pred.sum(), csmf_actual.sum(), 1)
 
     preds = pd.concat([y_actual, y_pred], axis=1)
-    preds.index.name = 'newid'
+    preds.index.name = 'sid'
     preds.columns = ['actual', 'prediction']
-    preds.reset_index(inplace=True)
 
-    # It's possible for some classes predictions not to occur
-    # These would result in missingness when aligning the csmf series
+    # It's possible for classifier to not predict classes in the training data.
+    # Non-sklearn classifiers (like Tariff) can also predict classes other
+    # than those in the train set (e.g. missing). Preserve these additional
+    # classes to return.
     csmf = pd.concat([csmf_actual, csmf_pred], axis=1).fillna(0)
     csmf.index.name = 'cause'
     csmf.columns = ['actual', 'prediction']
-    csmf.reset_index(inplace=True)
-
-    trained = clf.trained.reset_index()
-    trained.rename(columns={trained.columns[0]: 'cause'}, inplace=True)
 
     ccc = pd.Series({cause: calc_ccc(cause, y_actual, y_pred)
                      for cause in y_actual.unique()})
 
-    csmf_acc = calc_csmf_accuracy(csmf.actual, csmf.prediction)
-    cccsmf_acc = correct_csmf_accuracy(csmf)
-    accuracy = pd.DataFrame([{
-            'mean_ccc': ccc.mean(),
-            'median_ccc': ccc.median(),
-            'csmf_accuracy': csmf_acc,
-            'cccsmf_accuracy': cccsmf_acc,
-        }], columns=['mean_ccc', 'median_ccc', 'csmf_accuracy',
-                     'cccsmf_accuracy', 'converged'])
+    # Use all and only the classes from the training data to predict csmf
+    causes = csmf_actual.index
+    csmf_acc = calc_csmf_accuracy_from_csmf(csmf.loc[causes, 'actual'],
+                                            csmf.loc[causes, 'prediction'])
+    cccsmf_acc = correct_csmf_accuracy(csmf_acc)
 
-    return preds, csmf, trained, ccc, accuracy
+    accuracy = pd.DataFrame([[
+        ccc.mean(),
+        ccc.median(),
+        csmf_acc,
+        cccsmf_acc,
+    ]], columns=['mean_ccc', 'median_ccc', 'csmf_accuracy', 'cccsmf_accuracy'])
+
+    preds.reset_index(inplace=True)
+    ccc = ccc.reset_index()
+    ccc.columns = ['cause', 'ccc']
+    csmf.reset_index(inplace=True)
+    return preds, csmf, ccc, accuracy
 
 
 def dirichlet_resample(X, y, n_samples=None):
     """Resample so that the predicted classes follow a dirichlet distribution
 
     When using a stratified split strategy for validation the cause
-    distribution between the test and train splits are equal. Resampling the
+    distribution between the test and train splits are similiar. Resampling the
     test data using a dirichlet distribution provides a cause distribution in
     the test data which is uncorrelated to the cause distribution of the
     training data. This is essential for correctly estimating accuracy at
-    the population level. A classifier which knows the output distribution may
-    perform very well at the population level without getting any individaul
-    level predictions correct. Ensuring the distributions are uncorrelated
-    guards against this bias.
+    the population level across a variety of population. A classifier which
+    knows the output distribution may perform well by only predicting the most
+    common causes regardless of the predictors. This classifier would easily
+    do better than chance. Alternatively, a classifier may a very high
+    sensitivity for only one cause and guess at random for all other causes.
+    If only tested in a population with a high prevalence of this cause, the
+    classifier may appear to be very good. Neither of these provide robust
+    classifier which can be widely used. Resampling the test split provides a
+    better estimate of out of sample validity. The dirichlet distribution is
+    conjugate prior of the multinomial distribution and always sums to one, so
+    it is suitable for resampling categorical data.
 
     Args:
-        X (array-like): samples by features matrix
+        X (matrix-like): samples by features matrix
         y (list-like): target values
         n_samples (int): number of samples in output. If none this defaults
-            to the length of the input
+            to the length of the input.
 
     Return:
         X_new (array or dataframe): resampled data
         y_new (array or series): resampled predictions
     """
-    if len(X) != len(y):
-        raise ValueError("X and y must be the same length")
+    # Preserve labels from dataframes, but coerce everything else to np.array
+    if isinstance(X, pd.DataFrame):
+        check_X_y(X, y, dtype=None)
+    else:
+        X, y = check_X_y(X, y, dtype=None)
+
     if not n_samples:
         n_samples = len(X)
 
     classes = np.unique(y)
-    n_classes = len(classes)
-    distribution = np.random.dirichlet(np.ones(n_classes))
+
+    # Draw samples from a dirichlet distribution where the alpha value for
+    # each class is the same
+    distribution = np.random.dirichlet(np.ones(len(classes)))
+
+    # To calculate counts for each cause we multiply fractions through by the
+    # desired sampled size and round down. We then add counts for the total
+    # number of missing observations to achieve exactly the desired size.
     counts = np.vectorize(int)(distribution * n_samples)
-    missing = int(n_samples - np.sum(counts))
-    for i in np.random.choice(range(n_classes), size=missing):
-        counts[i] += 1
+    counts = counts + np.random.multinomial(n_samples - counts.sum(),
+                                            distribution)
 
-    X_new, y_new = [], []
-    for i in range(n_classes):
-        X_new.append(resample(safe_indexing(X, np.asarray(y) == classes[i]),
-                              n_samples=counts[i]))
-        y_new.append([classes[i]] * counts[i])
+    X_new = [resample(safe_indexing(X, np.where(y == class_)), n_samples=cnt)
+             for cnt, class_ in zip(counts, classes)]
+    y_new = np.repeat(classes, counts)
 
-    y_new = np.concatenate(y_new)
     if isinstance(X, pd.DataFrame):
         X_new = pd.concat(X_new)
         y_new = pd.Series(y_new, index=X_new.index)
     else:
         X_new = np.vstack(X_new)
 
-    assert len(X_new) == len(y_new) == n_samples
     return X_new, y_new
 
 
@@ -188,30 +181,31 @@ def out_of_sample_accuracy(X, y, clf, model_selector, groups=None,
     """Mesaure out of sample accuracy of a classifier
 
     Args:
-        X: (np.ndarray) rows are records, columns are features
-        y: (np.array) predictions for each record
+        X (matrix-like): samples by features matrix
+        y (list-like): target values
         clf: sklearn-like classifier object
-        model_selector: (sklearn model_selection) iterator to produce
-            test-train splits
-            with my_split_id method added
-        groups: (list-like) encoded group labels for each sample
-        tags: (dict) column -> constant, added to the returned dataframe
-        subset: (tuple of int) splits to perform
-        aggregate: (dict): mapping of classes to new classes. Applied
-            to data after predicting before calculating performance.
+        model_selector (sklearn model_selection): iterator to produce
+            test-train splits with split_id method added
+        groups (list-like): encoded group labels for each sample
+        tags (dict): column -> constant, identifies added to the returned
+            dataframes
+        subset (tuple of int): splits to perform
+        aggregate (dict): mapping of classes to new classes. Applied
+            to the predictions before calculating performance.
+        resample_test (bool): resample test data to a dirichlet distribution
+        resample_size (float): scalar applied to n of samples to determine
+            output resample size.
 
     Returns:
-        preds (dataframe): actual and predicted values for all observations
-            and for all splits
-        csmfs (dataframe): actual and predicted proportions for each cause
-            and for each split
-        trained (dataframe): matrix of learned associations between
-            cause/symptom pairs from the training data for each split
-        ccc (dataframe): chance-correct concordance for each cause and for
-            each split
-        accuracy (dataframe): summary accuracy measures for each split
+        (tuple of dataframes): results ``prediction_accuracy`` concatentated
+            across splits
+
+    See Also:
+        prediction_accuracy
     """
-    output = [[], [], [], [], []]
+    check_X_y(X, y, dtype=None)
+
+    output = [[], [], [], []]
     splits = model_selector.split(X, y, groups)
     for i, (train_index, test_index) in enumerate(splits):
         if subset:
@@ -237,16 +231,17 @@ def out_of_sample_accuracy(X, y, clf, model_selector, groups=None,
                                       resample_size=resample_size)
         assert len(results) == len(output)
 
-        if hasattr(model_selector, 'split_id'):
+        try:
             test_groups = np.unique(safe_indexing(groups, test_index))
             split_id = model_selector.split_id(i, test_groups)
-        else:
+        except (AttributeError, TypeError):
             split_id = i
+
         for df in results:
             df['split'] = split_id
 
-        for i in range(len(output)):
-            output[i].append(results[i])
+        for i, out in enumerate(output):
+            out.append(results[i])
 
     for i in range(len(output)):
         output[i] = pd.concat(output[i])
@@ -267,20 +262,20 @@ def in_sample_accuracy(X, y, clf, aggregate=None, resample_test=True,
     """Mesaure in-sample accuracy of a classifier
 
     Args:
-        X:
-        y:
+        X (matrix-like): samples by features matrix
+        y (list-like): target values
         clf: sklearn-like classifier object
-
+        aggregate (dict): mapping of classes to new classes. Applied
+            to the predictions before calculating performance.
+        resample_test (bool): resample test data to a dirichlet distribution
+        resample_size (float): scalar applied to n of samples to determine
+            output resample size.
 
     Returns:
-        preds (dataframe): two column dataframe with actual and predicted
-            values for all observations
-        csmfs (dataframe): two column dataframe with actual and predicted
-            proportions for each cause
-        trained (dataframe): matrix of learned associations between
-            cause/symptom pairs from the training data
-        ccc (dataframe): chance-correct concordance for each cause in one row
-        accuracy (dataframe): summary accuracy measures in one row
+        (tuple of dataframes): see ``prediction_accuracy``
+
+    See Also:
+        prediction_accuracy
     """
     return prediction_accuracy(clf, X, y, X, y, aggregate=aggregate,
                                resample_test=resample_test,
@@ -288,6 +283,86 @@ def in_sample_accuracy(X, y, clf, aggregate=None, resample_test=True,
 
 
 def no_train(X, y, clf, aggregate=None, resample_test=True, resample_size=1):
+    """Mesaure accuracy of a classifier of untrained classifier.
+
+    This is only relevant for algorithms like SmartVA and InSilicoVA which
+    ship with default training data.
+
+    Args:
+        X (matrix-like): samples by features matrix
+        y (list-like): target values
+        clf: sklearn-like classifier object
+        aggregate (dict): mapping of classes to new classes. Applied
+            to the predictions before calculating performance.
+        resample_test (bool): resample test data to a dirichlet distribution
+        resample_size (float): scalar applied to n of samples to determine
+            output resample size.
+
+    Returns:
+        (tuple of dataframes): see ``prediction_accuracy``
+
+    See Also:
+        prediction_accuracy
+    """
     return prediction_accuracy(clf, None, None, X, y, aggregate=aggregate,
                                resample_test=resample_test,
                                resample_size=resample_size)
+
+
+def config_model_selector(model_selector, **kwargs):
+    """Return an sklearn model selector object to create test-train splits
+
+    Args:
+        model_selector (str): 'sss' for StratifiedShuffleSplit or 'holdout'
+            for LeavePGroupsOut
+        **kwargs: parameters to pass to the model selector constructor
+
+    Returns:
+        model_selector: Sklearn object to compute test-train splits
+    """
+    if model_selector == 'sss':
+        return config_sss_model_selector(**kwargs)
+    elif model_selector == 'holdout':
+        return config_holdout_model_selector(**kwargs)
+    else:
+        raise ValueError("Unknown model selector '{}'".format(model_selector))
+
+
+def config_sss_model_selector(**kwargs):
+    """Configure the StratifiedShuffleSplit model selector
+
+    Args:
+        n_splits (int): number of splits to perform [default=2]
+        test_size(float): proportion of data to use in test split [default=.25]
+        random_state: seed for random number generator
+
+    Returns
+        model_selectors
+    """
+    n_splits = kwargs.get('n_splits', 2)
+    test_size = kwargs.get('test_size', .25)
+    random_state = kwargs.get('random_state', np.random.RandomState(8675309))
+    selector = StratifiedShuffleSplit(n_splits=n_splits, test_size=test_size,
+                                      random_state=random_state)
+    return selector
+
+
+def config_holdout_model_selector(**kwargs):
+    """Configure the LeavePGroupsOut model selector
+
+    This adds a method to calculate the split_id from the test groups.
+
+    Args:
+        n_groups (int): number of groups in the test split [default=1]
+
+    Returns:
+        model_selector
+    """
+    n_groups = kwargs.get('n_groups', 1)
+    selector = LeavePGroupsOut(n_groups=n_groups)
+
+    def split_id(i, test_groups):
+        return 'test:{}'.format('+'.join(map(str, np.unique(test_groups))))
+    selector.split_id = split_id
+
+    return selector
