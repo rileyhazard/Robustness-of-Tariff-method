@@ -20,7 +20,7 @@ def load_ghdx_data(module):
     with warnings.catch_warnings():
         warnings.simplefilter('ignore', pd.io.common.DtypeWarning)
         df = pd.read_csv(os.path.join(GHDX_DIR, filename))
-    df['sid'] = df.module + df.newid.astype(str)
+    df['sid'] = df.module + df.newid.astype(int).astype(str)
     return df.set_index('sid')
 
 
@@ -33,7 +33,7 @@ def save_ghdx_gold_standards():
     # Nobody cares about the 11 neonate causes, only the 6, so replace it
     neonate = df.module == 'Neonate'
     df.loc[neonate, 'gs_text46'] = df.loc[neonate, 'gs_text34']
-    df.drop('gs_text46', axis=1).to_csv(outfile)
+    df.drop('gs_text34', axis=1).to_csv(outfile)
 
 
 def clean_ghdx_codebook():
@@ -340,7 +340,7 @@ def main():
     df = map_ghdx_to_odk(codebook)
     df = df.fillna('').astype(str).applymap(remove_float_zero)
 
-    odk_codebook = get_codebook('odk')
+    odk_codebook = get_codebook('odk').drop('sid')
     df = df.loc[:, odk_codebook.index.tolist()].fillna('')
 
     full = df.copy()
