@@ -83,7 +83,7 @@ gen_6_6,Did the decedent have a National ID number?,general,categorical,0,1,0,9,
 gen_6_7,Record the National ID number:,general,info,0,1,0,'',
 gen_6_8,Does one of the parents have a National ID number?,general,categorical,0,1,0,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to answer"" 9 ""Don't know"""
 gen_6_9,Which parent will we record?,general,categorical,0,1,0,,"1 ""Mother"" 2 ""Father"""
-gen_6_10,Record the parent’s National ID number:,general,info,0,1,0,'',
+gen_6_10,Record the parent?s National ID number:,general,info,0,1,0,'',
 adult_1_1a,[Was the decedent ever told by a health professional that he or she ever suffered from] Asthma,adult,categorical,1,1,1,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to answer"" 9 ""Don't know"""
 adult_1_1b,[Was the decedent ever told by a health professional that he or she ever suffered from] Arthritis,adult,categorical,1,0,1,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to answer"" 9 ""Don't know"""
 adult_1_1c,[Was the decedent ever told by a health professional that he or she ever suffered from] Cancer,adult,categorical,1,1,1,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to answer"" 9 ""Don't know"""

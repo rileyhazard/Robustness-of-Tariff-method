@@ -155,7 +155,7 @@ a2_73,For how long before death did [name] have stiff neck?,adult,numeric,1,1,0,
 a2_74,Did [name] experience a period of loss of consciousness?,adult,categorical,1,1,0,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to Answer"" 9 ""Don't Know"""
 a2_75,Did the period of loss of consciousness start suddenly or slowly?,adult,categorical,1,1,0,9,"1 ""Suddenly"" 2 ""Slowly"" 8 ""Refused to Answer"" 9 ""Don't Know"""
 a2_76,For how long did the period of loss of consciousness last?,adult,numeric,1,1,0,0,
-a2_77,Did it continue until death?,adult,categorical,1,1,0,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to Answer"" 9 ""Don't Know"""
+a2_77,Did the period of loss of consciousness continue until death?,adult,categorical,1,1,0,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to Answer"" 9 ""Don't Know"""
 a2_78,Did [name] experience a period of confusion at any time in the three months prior to death?,adult,categorical,1,0,0,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to Answer"" 9 ""Don't Know"""
 a2_79,For how long did the period of confusion last?,adult,numeric,1,1,0,0,
 a2_80,Did the period of confusion start suddenly or slowly?,adult,categorical,1,0,0,9,"1 ""Suddenly"" 2 ""Slowly"" 8 ""Refused to Answer"" 9 ""Don't Know"""
@@ -205,7 +205,7 @@ a4_02_5a,Type of tobacco used: other,adult,categorical,1,1,0,9,"0 ""No"" 1 ""Yes
 a4_02_5b,"Type of tobacco used: other, specify",adult,text,1,1,0,'',
 a4_02_6,Type of tobacco used: refused,adult,categorical,1,1,0,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to Answer"" 9 ""Don't Know"""
 a4_02_7,Type of tobacco used: don't know,adult,categorical,1,1,0,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to Answer"" 9 ""Don't Know"""
-a4_03,How much pipe/chewing tobacco did [name] use daily?,adult,text,1,0,0,'',
+a4_03,How much pipe/chewing tobacco did [name] use daily?,adult,numeric,1,0,0,0,
 a4_04,How many cigarettes did [name] smoke daily?,adult,numeric,1,1,0,0,
 a4_05,Did [name] drink alcohol?,adult,categorical,1,0,0,9,"0 ""No"" 1 ""Yes"" 8 ""Refused to Answer"" 9 ""Don't Know"""
 a4_06,Would you say the amount of alcohol [name] drank daily was…?,adult,categorical,1,0,0,9,"1 ""Low"" 2 ""Moderate"" 3 ""High"" 8 ""Refused to Answer"" 9 ""Don't Know"""
