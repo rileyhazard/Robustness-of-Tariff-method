@@ -62,7 +62,7 @@ def is_uncertain(arr, ui=(2.5, 97.5)):
         (bool)
     """
     lower, upper = np.percentile(arr, ui)
-    return lower < 0 and upper > 0
+    return lower <= 0 and upper >= 0
 
 
 def calc_ui(arr, ui=(2.5, 97.5), labels=None):
