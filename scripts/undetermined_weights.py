@@ -3,6 +3,7 @@ import os
 import sys
 
 import pandas as pd
+import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -36,7 +37,8 @@ def main(dataset, module, input_dir, n_splits=2, hce=True, short=True):
 
     cb = get_codebook(f'{module}_symptom')
     instrument = 'short' if short else 'full'
-    cols = cb.loc[(cb.hce == hce) & cb[instrument].astype(bool)].index
+    hce_cols = np.full(len(cb), True, dtype=bool) if hce else (cb.hce == hce)
+    cols = cb.loc[hce_cols & cb[instrument].astype(bool)].index
 
     X, y = get_X_y(dataset, module, input_dir)
     metadata_cols = ['age_', 'sex_', 'rules_']
