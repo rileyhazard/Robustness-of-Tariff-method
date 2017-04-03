@@ -1,5 +1,8 @@
+from itertools import product
 import os
 import sys
+
+import pandas as pd
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -40,6 +43,7 @@ def main(dataset, module, input_dir, n_splits=2, hce=True, short=True):
     X.loc[:, drop_cols] = 0   # keep but mask to avoid index errors
 
     cause_map = get_cause_map(module, 'smartva_text', 'smartva_reporting')
+    cause_map[float('nan')] = 'Undetermined'
     kwargs = {
         'n_splits': n_splits,
         'aggregation': cause_map,
@@ -49,8 +53,19 @@ def main(dataset, module, input_dir, n_splits=2, hce=True, short=True):
 
     weights = calc_redistribution_weights(gbd_csmf, undetermined_prob)
 
-    filename = os.path.join(output_dir, f'{module}_undetermined_weights.csv')
-    weights.to_csv(filename, index=False)
+    df = pd.DataFrame(list(product(
+        weights.iso3.unique(),
+        weights.age.unique(),
+        [1, 2, 3],
+        weights.cause.unique(),
+    )), columns=['iso3', 'age', 'sex', 'cause'])
+    df = df.loc[~(((df.age == 99) & (df.sex != 3)) |
+                  ((df.sex == 3) & (df.age != 99)))]
+    df = df.merge(weights, how='left').fillna(0)
+
+    hce = int(hce)
+    filename = f'{module}_undetermined_weights-{instrument}_hce{hce}.csv'
+    df.to_csv(os.path.join(output_dir, filename), index=False)
 
 
 if __name__ == '__main__':

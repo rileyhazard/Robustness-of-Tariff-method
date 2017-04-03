@@ -33,6 +33,8 @@ def save_ghdx_gold_standards():
     # Nobody cares about the 11 neonate causes, only the 6, so replace it
     neonate = df.module == 'Neonate'
     df.loc[neonate, 'gs_text46'] = df.loc[neonate, 'gs_text34']
+
+    df.module = df.module.str.lower()
     df.drop('gs_text34', axis=1).to_csv(outfile)
 
 
