@@ -44,6 +44,7 @@ def main(dataset, module, input_dir, n_splits=2, hce=True, short=True):
     X.loc[:, drop_cols] = 0   # keep but mask to avoid index errors
 
     cause_map = get_cause_map(module, 'smartva_text', 'smartva_reporting')
+    cause_map[float('nan')] = 'Undetermined'
     kwargs = {
         'n_splits': n_splits,
         'aggregation': cause_map,

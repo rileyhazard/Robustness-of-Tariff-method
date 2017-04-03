@@ -58,15 +58,19 @@ def prediction_accuracy(clf, X_train, y_train, X_test, y_test, aggregate=None,
     if hasattr(clf, 'csmf'):
         csmf_pred = clf.csmf
     else:
-        csmf_pred = y_pred.value_counts() / len(y_pred)
+        csmf_pred = y_pred.value_counts(dropna=False) / len(y_pred)
 
     y_actual = pd.Series(y_test)
 
     if aggregate:
+        if any([isinstance(x, str) for x in aggregate.keys()]):
+           y_pred = y_pred.astype(np.object_)
         y_pred = y_pred.replace(aggregate)
         y_actual = y_actual.replace(aggregate)
-        csmf_pred.index = csmf_pred.index.to_series().replace(aggregate)
-        csmf_pred = csmf_pred.groupby(level=0).sum()
+        csmf_pred.index = csmf_pred.index.to_series().astype(np.object_).replace(aggregate)
+        #import pdb; pdb.set_trace()
+        if not csmf_pred.index.is_unique:
+            csmf_pred = csmf_pred.groupby(level=0).sum()
 
     csmf_actual = y_actual.value_counts() / len(y_actual)
 
@@ -92,8 +96,8 @@ def prediction_accuracy(clf, X_train, y_train, X_test, y_test, aggregate=None,
 
     # Use all and only the classes from the training data to predict csmf
     causes = csmf_actual.index
-    csmf_acc = calc_csmf_accuracy_from_csmf(csmf.loc[causes, 'actual'],
-                                            csmf.loc[causes, 'prediction'])
+    csmf_acc = calc_csmf_accuracy_from_csmf(csmf['actual'],
+                                            csmf['prediction'])
     cccsmf_acc = correct_csmf_accuracy(csmf_acc)
 
     accuracy = pd.DataFrame([[

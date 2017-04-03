@@ -215,7 +215,6 @@ def get_X_y(dataset, module, path):
     X[symp_cols] = X[symp_cols].fillna(0)
 
     col_order = [*metadata_cols, *symp_cols]
-
     X = X[col_order]
 
     return X, y
