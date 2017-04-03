@@ -191,7 +191,7 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
         valid = pd.DataFrame(valid, df_index, self.causes_)
         pred = valid.apply(best_ranked, axis=1)
 
-        rules = getattr(self, 'rules', np.full(X.shape[0], np.nan))
+        rules = getattr(self, 'rules_', np.full(X.shape[0], np.nan))
         rules = pd.Series(rules, df_index)
         pred[rules.notnull()] = rules
 
@@ -324,14 +324,12 @@ def calc_insignificant_tariffs(X, y, bootstraps=500, ui=(2.5, 97.5),
         raise ValueError('"ui" must be a 2-tuple of floats')
     ui = sorted(ui)
 
-    endorsements = boostrap_endorsements_by_causes(X, y, bootstraps,
-                                                   random_state)
-    symptoms_name = endorsements.columns.name or 2
-    insig = endorsements.groupby(level='draw') \
-                        .apply(lambda df: df.apply(tariffs_from_endorsements,
-                                                   raw=True)) \
-                        .stack().groupby(level=('cause', symptoms_name)) \
-                        .apply(is_uncertain, ui=ui).unstack()
+    endors = boostrap_endorsements_by_causes(X, y, bootstraps, random_state)
+    insig = endors.groupby(level='draw') \
+                  .apply(lambda df: df.apply(tariffs_from_endorsements,
+                                             raw=True)) \
+                  .groupby(level='cause') \
+                  .apply(lambda df: df.apply(is_uncertain, raw=True, ui=ui))
 
     if not input_is_df:
         insig = insig.values
@@ -676,9 +674,9 @@ def apply_restrictions(X, causes, metadata=None, restrictions=None):
     restrictions = restrictions or dict()
     metadata = metadata or dict()
 
-    ages = metadata.get('age', np.full(X.shape[0], np.nan))
-    sexes = metadata.get('sex', np.zeros(X.shape[0]))
-    regions = metadata.get('region', np.full(X.shape[0], np.nan))
+    ages = metadata.get('age_', np.full(X.shape[0], np.nan))
+    sexes = metadata.get('sex_', np.zeros(X.shape[0]))
+    regions = metadata.get('region_', np.full(X.shape[0], np.nan))
 
     check_consistent_length(X, ages, sexes, regions)
     ages = column_or_1d(ages)

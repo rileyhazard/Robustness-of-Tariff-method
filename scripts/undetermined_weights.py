@@ -39,7 +39,8 @@ def main(dataset, module, input_dir, n_splits=2, hce=True, short=True):
     cols = cb.loc[(cb.hce == hce) & cb[instrument].astype(bool)].index
 
     X, y = get_X_y(dataset, module, input_dir)
-    drop_cols = X.columns.difference(cols)
+    metadata_cols = ['age_', 'sex_', 'rules_']
+    drop_cols = X.columns.difference(cols).difference(metadata_cols)
     X.loc[:, drop_cols] = 0   # keep but mask to avoid index errors
 
     cause_map = get_cause_map(module, 'smartva_text', 'smartva_reporting')
