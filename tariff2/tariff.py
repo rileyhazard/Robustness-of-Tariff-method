@@ -566,18 +566,56 @@ def rank_samples(X_test, X_train):
     X_test = check_array(X_test)
     X_train = check_array(X_train)
 
+    # Number of cells * 8 bytes per float in GB
+    mem_req = X_test.shape[0] * X_test.shape[1] * X_train.shape[0] * 8 / 10**9
+    ram = 12   # well I have 12 GB of RAM on my computer. IDK about you.
+
+    if mem_req > ram:
+        # Samples are ranked within the entire training set, however they are
+        # independent of other observations. We can split the test data as
+        # much as we need to, but must leave the training data intact.
+        splits = int(mem_req / ram) + 1
+        ranked = np.concatenate([_rank_samples(X_sub, X_train)
+                                 for X_sub in np.array_split(X_test, splits)])
+    else:
+        ranked = _rank_samples(X_test, X_train)
+
+    if input_is_df:
+        ranked = pd.DataFrame(ranked, df_index, causes)
+
+    return ranked
+
+
+def _rank_samples(X_test, X_train):
+    """Determine rank of test samples within training data
+
+    This is a "private" version of the function which performs to array
+    manipulation but does not perform input validation or type conversion.
+    It is intended to be wrapped to handle memory allocation issues.
+
+    Args:
+        X_test (np.array): samples by causes matrix of tariff scores
+        X_train (np.array): samples by causes matrix of tariff scores
+
+    Returns:
+        ranked (np.array): samples by causes matrix of ranks within the
+            training data for each sample in the test data
+    Warning:
+        This function is NOT memory efficient. It creates an array in memory
+        which has dimensions (X_test.shape[0], n_causes, X_train.shape[0]).
+        A single 2D array of ~30,000 samples by 46 causes, the size of
+        the resampled adult uniform dataset, is about 11 MB. If the test array
+        has more than about 5000 samples, this function starts dragging. It
+        also might explode your computer's memory, hence the warning.
+
+    """
     X_test_3d = X_test[:, :, None]
     X_train_3d = X_train.T[None, :, :]
 
     lower = np.apply_along_axis(np.sum, 2, X_test_3d < X_train_3d)
     higher = np.apply_along_axis(np.sum, 2, X_test_3d > X_train_3d)
 
-    ranked = (lower + (X_train.shape[0] - higher)) / 2 + 0.5
-
-    if input_is_df:
-        ranked = pd.DataFrame(ranked, df_index, causes)
-
-    return ranked
+    return (lower + (X_train.shape[0] - higher)) / 2 + 0.5
 
 
 def mask_uncertain(X_scores, X_ranks, train_n=np.inf, min_score=0,
