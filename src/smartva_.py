@@ -2,8 +2,8 @@
 import numpy as np
 import pandas as pd
 
-import tariff
-from getters import (
+from src.tariff import TariffClassifier
+from src.getters import (
     load_smartva_tariff_data,
     load_smartva_tariff_matrix,
     load_smartva_validated_data,
@@ -59,7 +59,7 @@ RESTRICTIONS = {
 }
 
 
-class SmartvaClassifier(tariff.TariffClassifier):
+class SmartvaClassifier(TariffClassifier):
     def __init__(self, path, module, short=False):
         self.path = path
         self.module = module

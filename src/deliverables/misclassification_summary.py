@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from getters import (
+from src.getters import (
     get_gold_standard,
     get_codebook,
     get_cause_map,
@@ -9,7 +9,7 @@ from getters import (
     get_smartva_symptoms,
     get_smartva_predictions
 )
-import performance as perf
+import src.metrics as perf
 
 
 def get_endorsements(module, symptoms, gold_standard):
@@ -57,7 +57,7 @@ def get_classification_statistics(gold_standard, prediction):
             perf.calc_negative_predictive_value(*params),
             perf.calc_sensitivity(*params),
             perf.calc_specificity(*params),
-            perf.calc_prediction_accuracy(*params),
+            perf.calc_specific_accuracy(*params),
         ])
     df = pd.DataFrame(df, index=causes, columns=stats)
     df = df.sort_index()
@@ -130,7 +130,7 @@ def main(path, dataset, outfile=None, cause_list='smartva_reporting',
     stats_by_cause = pd.concat([data[module][4] for module in modules])
     overall_stats = pd.concat([data[module][5] for module in modules], axis=1)
 
-    spurious_associations = get_metadata('data/smartva_spurious.yml',
+    spurious_associations = get_metadata('src/data/smartva_spurious.yml',
                                          keys='spurious_associations')
 
     if outfile:

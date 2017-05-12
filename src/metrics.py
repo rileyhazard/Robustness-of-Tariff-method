@@ -1,10 +1,55 @@
 from __future__ import division
+from functools import reduce
+import operator
 import math
 
 import pandas as pd
 import numpy as np
+from sklearn.utils.validation import check_consistent_length, column_or_1d
 
-from src.utils import safe_align_sequences
+
+def union_NDFrame_indicies(*frames, sort=False):
+    """Return the subset of indices common to all frames.
+
+    Rows with non-matching indicies are dropped. If the rows are not sorted,
+    they will be returned in an arbitary order. However, all the indicies
+    of all the frames will be in the same order. None NDFrames are removed.
+
+    Args:
+        *frames: pandas series or dataframes
+        sorted: should the indicies be sorted
+
+    Returns:
+        (list of frames)
+
+    Warning:
+        This will only keep the first instances of duplicated indicies.
+    """
+    frames = [f for f in frames if isinstance(f, pd.core.generic.NDFrame)]
+    union = list(reduce(operator.and_, [set(f.index) for f in frames]))
+    if sort:
+        union = sorted(union)
+    return [f.loc[union] for f in frames]
+
+
+def safe_align_sequences(*seqs):
+    """Align sequences accounting for pandas indicies.
+
+    If pandas.NDFrames are passed, they are unioned and non-matching
+    observations are dropped. If some NDFrames and some non-NDFrames are
+    passed, it is assumed the order is consistent across all sequences.
+
+    Args:
+        seqs (sequence of sequences)
+
+    Returns:
+        tuple of np.arrays
+    """
+    if all([isinstance(s, pd.core.generic.NDFrame) for s in seqs]):
+        seqs = union_NDFrame_indicies(*seqs)
+
+    check_consistent_length(*seqs)
+    return [column_or_1d(s) for s in seqs]
 
 
 def calc_sensitivity(class_, actual, predicted):
@@ -184,6 +229,62 @@ def calc_ccc(class_, actual, predicted):
     sensitivity = calc_sensitivity(class_, actual, predicted)
     chance = 1 / len(np.unique(actual))
     return (sensitivity - chance) / (1 - chance)
+
+
+def calc_overall_correctness(actual, predicted):
+    """Calculate the proportion of correct individual-level predictions
+
+    Args:
+        actual (sequence): true individual level classification
+        predicted (sequence): individual level prediction
+
+    Return:
+        float
+    """
+    actual, predicted = safe_align_sequences(actual, predicted)
+    return (actual == predicted).sum() / len(actual)
+
+
+def agg_cause_specific_metrics(agg, metric, actual, predicted, weights=None):
+    """Aggregate cause specific metrics into a single estimate
+
+    It is useful to have a single performance metric at the individual-level.
+    Some metrics only produce cause-specific estimates. These estimates can be
+    aggregated in different ways to produce a single overall performance
+    estimate.
+
+    Args:
+        agg (function): function to aggregate across cause-specifice stimates.
+            It should have the following sigature (sequence [, weights]) -->
+            float where weights is an optional sequence with the same length
+            as the number of actual prediction classes.
+        metric (function): function to compute cause specific metrics. It
+            should have the following sigature: (class, actual, predicted) -->
+            float where actual and predicted are sequences and class is a
+            value in the two sequences.
+        actual (sequence): true individual level classification
+        predicted (sequence): individual level predictions
+        weights (bool or sequence): use the true distribution as weights when
+            aggregating across causes
+
+    Returns:
+        float
+
+    Example:
+
+    >>> agg_cause_specific_metrics(np.median, calc_ccc, actual, predicted)
+    >>> agg_cause_specific_metrics(np.average, calc_ccc, actual, predicted,
+                                   weights=True)
+
+    """
+    if weights is True:
+        csmf_true = np.unique(actual, return_counts=True)[-1] / len(actual)
+        w = {'weights': csmf_true}
+    elif weights:
+        w = weights
+    else:
+        w = dict()
+    return agg([metric(c, actual, predicted) for c in np.unique(actual)], **w)
 
 
 def calc_median_ccc(actual, predicted):

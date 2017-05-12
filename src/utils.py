@@ -1,10 +1,13 @@
 from functools import reduce
-import numbers
 import operator
 
 import numpy as np
 import pandas as pd
 from sklearn.utils.validation import check_consistent_length, column_or_1d
+
+from src import metrics
+
+""""""
 
 
 def union_NDFrame_indicies(*frames, sort=False):
@@ -123,3 +126,20 @@ def make_mask(matrix, rows, cols, ignore_errors=True):
 
     return arr
 
+
+def calc_stuff(df):
+    stats = []
+    for cause in df.actual.unique():
+        params = (cause, df.actual, df.prediction)
+        stats.append([
+            cause,
+            metrics.calc_ccc(*params),
+            metrics.calc_sensitivity(*params),
+            metrics.calc_specificity(*params),
+            metrics.calc_positive_predictive_value(*params),
+            metrics.calc_negative_predictive_value(*params),
+            metrics.calc_specific_accuracy(*params),
+        ])
+    cols = ['cause', 'ccc', 'sensitivity', 'specificity', 'ppv', 'npv',
+            'accuracy']
+    return pd.DataFrame(stats, columns=cols).set_index('cause')

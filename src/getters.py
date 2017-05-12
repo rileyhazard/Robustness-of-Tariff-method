@@ -1,13 +1,25 @@
+from __future__ import absolute_import
 import os
 import sys
 import yaml
 
 import pandas as pd
 
-from tariff import TariffClassifier
 
+try:
+    basestring
+except NameError:
+    basestring = str
 
 REPO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+
+
+def best_ranked(series):
+    """Determine best ranked prediction from a series of ranks"""
+    if len(series.unique()) > 1:
+        return series.dropna().sort_values().first_valid_index()
+    else:
+        return float('nan')
 
 
 def get_gold_standard(dataset, module=None):
@@ -107,8 +119,7 @@ def get_smartva_ranks_file(path, module):
 
 def get_smartva_predictions(path, module, rules=True, cause_map=None):
     ranks = get_smartva_ranks_file(path, module)
-    prediction = ranks.apply(TariffClassifier.best_ranked, axis=1).fillna(0)
-
+    prediction = ranks.apply(best_ranked, axis=1).fillna(0)
     if rules:
         symptom = get_smartva_symptom_file(path, module)
         rules = symptom.cause
