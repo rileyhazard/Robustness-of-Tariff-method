@@ -101,8 +101,7 @@ ADULT_CAUSE_MAP = {
     'Cirrhosis and other chronic liver diseases': 'Cirrhosis',
     'Digestive diseases': 'Other Non-communicable Diseases',
 
-    'Epilepsy': 'Epilepsy',
-
+    'Epilepsy': 'Other Non-communicable Diseases',
     'Alzheimer disease and other dementias': 'Other Non-communicable Diseases',
     'Parkinson disease': 'Other Non-communicable Diseases',
     'Multiple sclerosis': 'Other Non-communicable Diseases',

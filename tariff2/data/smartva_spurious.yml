@@ -1,6 +1,15 @@
 adult:
   spurious_associations:
     Bite of Venomous Animal:
+    - s155
+    - s161
+    - s88881
+    - s94
+    - s96
+    - s97
+    - s999917
+    - s9999123
+    - s9999140
     - s9999148   # word_suicid
     - s9999123   # word_poison
     - s9999150   # word_suspect
@@ -27,20 +36,104 @@ adult:
     - s999948    # word_cut
     - s99995     # word_amput
     Drowning:
+    - s141
+    - s153
+    - s157
+    - s161
+    - s162
+    - s88881
+    - s99992
+    - s999957
+    - s999964
+    - s999968
+    - s999992
+    - s9999124
+    - s9999167
     - s9999156   # word_tree
     - s999968    # word_fall
     Esophageal Cancer:
     - s999965    # word_esophag
     Falls:
+    - s94
+    - s95
+    - s96
+    - s97
+    - s105
+    - s109
+    - s113
+    - s138
+    - s139
+    - s140
+    - s149
+    - s150992
+    - s151
+    - s152
+    - s157
+    - s159
+    - s161
+    - s162
+    - s99992
+    - s999920
+    - s999923
+    - s999926
+    - s999938
+    - s999947
+    - s999956
+    - s999968
+    - s999974
+    - s999977
+    - s999981
+    - s999992
+    - s9999156
+    - s9999169
     - s9999156   # word_tree
     - s999968    # word_fall
     - s99992     # word_accid
     - s999977    # word_head
     Fires:
+    - s156
+    - s157
+    - s159
+    - s161
+    - s162
+    - s88881
+    - s99992
+    - s999961
+    - s999971
+    - s999992
+    - s999998
     - s999971    # word_fire - too simple, captures heart burn, etc.
     - s999998    # word_kerosen
     - s999961    # word_electr
     Homicide:
+    - s94
+    - s96
+    - s97
+    - s113
+    - s138
+    - s139
+    - s149
+    - s150992
+    - s151
+    - s156
+    - s157
+    - s161
+    - s162
+    - s88881
+    - s999926
+    - s999956
+    - s999971
+    - s999977
+    - s999986
+    - s999992
+    - s999993
+    - s999998
+    - s9999100
+    - s9999113
+    - s9999118
+    - s9999124
+    - s9999137
+    - s9999169
     - s9999100   # word_kills - does not come up for suicide, leads to weird results
     - s999971    # word_fire
     - s9999137   # word_shot
@@ -113,6 +206,21 @@ adult:
     - s9999155   # word_transfus
     - s9999145   # word_stress
     Other Injuries:
+    - s157
+    - s159
+    - s161
+    - s162
+    - s88881
+    - s9999124
+    - s9999136
+    - s99992
+    - s999961
+    - s999968
+    - s999971
+    - s999976
+    - s999977
+    - s999992
+    - s147
     - s9999100   # word_kills
     - s999971    # word_fire
     - s999968    # word_fall
@@ -169,6 +277,30 @@ adult:
     - s999971    # word_fire
     - s999968    # word_fall
     Road Traffic:
+    - s138
+    - s141
+    - s154
+    - s157
+    - s161
+    - s162
+    - s72
+    - s75
+    - s88881
+    - s94
+    - s97
+    - s9999111
+    - s9999119
+    - s9999123
+    - s9999141
+    - s9999145
+    - s9999148
+    - s9999150
+    - s9999166
+    - s99993
+    - s999956
+    - s147
+    - s149
+    - s6
     - s9999112   # word_motorcycl
     - s99992     # word_accid
     - s999977    # word_head
@@ -188,9 +320,54 @@ child:
     - s17  # Did the baby ever cry?
     - s18  # Did the baby ever move?
     - s19  # Did the baby ever breathe?
-    - s190  # Has the deceased's (biological) mother ever been told she had AIDS by a health worker
+    - s190  # Has the deceaseds (biological) mother ever been told she had AIDS by a health worker
+    Bite of Venomous Animal:
+    - age
+    - s134
+    - s159
+    - s18
+    - s19
+    - s2995
+    - s30991
+    - s999921
+    - s999934
+    - s99994
+    - s999944
+    Drowning:
+    - age
+    - s157
+    - s165
+    - s2995
+    - s30991
+    - s999917
+    - s999918
     Falls:
+    - age
+    - s153
+    - s156
+    - s162
+    - s28
+    - s2994
+    - s30991
+    - s31
+    - s999918
+    - s999922
+    - s999925
+    - s999940
+    - s99995
     - s999922  # word_head
+    Fires:
+    - s147
+    - s160
+    - s162
+    - s165
+    - s30991
+    - s8992
+    - s9
+    - s999918
+    - s99992
+    - s999920
+    - s999943
     Hemorrhagic Fever:
     - s999924  # word_icu
     Malaria:
@@ -204,7 +381,7 @@ child:
     - s999935  # word_pox
     - s999910  # word_chest
     - s11991  # not born in a hospital
-    - s30991  # didn't die in a hospital
+    - s30991  # didnt die in a hospital
     - s2994  # quintile 4 of age
     - s28  # How old was the baby/child when the fatal illness started? [days]
     - s31  # How old was the deceased at the time of death? [days]
@@ -212,15 +389,27 @@ child:
     - s17  # Did the baby ever cry?
     - s18  # Did the baby ever move?
     - s19  # Did the baby ever breathe?
-    - s144  # During the illness that led to death, did [name]'s limbs (legs, arms) become ver
-    - s150  # During the illness that led to death, did [name] suffer from 'lack of blood' or
+    - s144  # During the illness that led to death, did [name]s limbs (legs, arms) become ver
+    - s150  # During the illness that led to death, did [name] suffer from lack of blood or
     - s153  # During the illness that led to death, did [name] bleed from anywhere?
     - s136  # Did [name] have a stiff neck during the illness that led to death?
-    - s188  # Has the deceased's (biological) mother ever been tested for HIV?
+    - s188  # Has the deceaseds (biological) mother ever been tested for HIV?
     Meningitis:
     - s17  # Did the baby ever cry?
     - s18  # Did the baby ever move?
     - s19  # Did the baby ever breathe?
+    Other Defined Causes of Child Deaths:
+    - s155  # Decedent suffered road traffic injury
+    - s156  # Decedent suffered fall
+    - s157  # Decedent suffered drowning
+    - s158  # Decedent suffered poisoning
+    - s159  # Decedent suffered bite/sting
+    - s160  # Decedent suffered burn/fire
+    - s161  # Decedent victim of violence
+    - s162  # Decedent suffered other injury
+    - s163  # Dont know if decedent suffered injury
+    - s164  # Decedent did not suffer accident
+    - s165  # Was the injury or accident intentionally inflicted by someone else?
     Other Digestive Diseases:
     - s17  # Did the baby ever cry?
     - s18  # Did the baby ever move?
@@ -233,10 +422,27 @@ child:
     Pneumonia:
     - s999931  # word_malnutrit
     Poisonings:
+    - s158
+    - s18
+    - s19
+    - s999934
+    - s999948
     - s17  # Did the baby ever cry?
     - s18  # Did the baby ever move?
     - s19  # Did the baby ever breathe?
     Road Traffic:
+    - age
+    - s153
+    - s155
+    - s165
+    - s2995
+    - s30991
+    - s99992
+    - s999922
+    - s999925
+    - s999939
+    - s99997
+    - s7
     - s99992  # word_accid
     Sepsis:
     - s999924  # word_icu
@@ -250,7 +456,7 @@ child:
     - s2992  # quintile 2 of age
     - s164  # Decedent did not suffer accident
     - s14  # What was the weight of the deceased at birth?
-    - s188  # Has the deceased's (biological) mother ever been tested for HIV?
+    - s188  # Has the deceaseds (biological) mother ever been tested for HIV?
     - s99998  # word_breath
     - s125  # During the illness that led to death, did [name] have difficult breathing?
     - s117  # How many days before death did the frequent loose or liquid stools start? [days]
@@ -262,6 +468,15 @@ child:
     - s18  # Did the baby ever move?
     - s19  # Did the baby ever breathe?
     Violent Death:
+    - s153
+    - s161
+    - s165
+    - s18
+    - s19
+    - s30991
+    - s8992
+    - s9
+    - s999932
     - s17  # Did the baby ever cry?
     - s18  # Did the baby ever move?
     - s19  # Did the baby ever breathe?
@@ -280,7 +495,7 @@ neonate:
     - s70  # Did the baby stop being able to cry?
     - s91  # At what age did the baby start feeling cold to touch? [days]
     - s19  # Did the baby ever breathe?
-    - s32  # Mark the baby's age at the time of death.
+    - s32  # Mark the babys age at the time of death.
     - s53  # How much time did the labor and delivery take? [days]
     - s87  # During the illness that led to death, did the baby have fever?
     - s28  # How old was the baby/child when the fatal illness started? [days]
