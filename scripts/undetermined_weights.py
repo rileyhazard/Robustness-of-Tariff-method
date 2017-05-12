@@ -31,7 +31,8 @@ def make_output_dir():
     return path
 
 
-def main(dataset, module, input_dir, n_splits=2, hce=True, short=True):
+def main(dataset, module, input_dir, n_splits=2, hce=True, short=True,
+         subset=None):
     output_dir = make_output_dir()
     gbd_csmf = calc_gbd_cause_weights(module)
 
@@ -50,6 +51,7 @@ def main(dataset, module, input_dir, n_splits=2, hce=True, short=True):
     kwargs = {
         'n_splits': n_splits,
         'aggregation': cause_map,
+        'subset': subset,
         **get_smartva_config(module)
     }
     undetermined_prob = calc_probability_undetermined(X, y, module, **kwargs)
@@ -67,7 +69,8 @@ def main(dataset, module, input_dir, n_splits=2, hce=True, short=True):
     df = df.merge(weights, how='left').fillna(0)
 
     hce = int(hce)
-    filename = f'{module}_undetermined_weights-{instrument}_hce{hce}.csv'
+    ss = '_s{}-{}'.format(*subset) if subset else ''
+    filename = f'{module}_undetermined_weights-{instrument}_hce{hce}{ss}.csv'
     df.to_csv(os.path.join(output_dir, filename), index=False)
 
 
@@ -77,9 +80,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('dataset', choices=['phmrc', 'nhmrc'])
     parser.add_argument('module', choices=['adult', 'child', 'neonate'])
-    parser.add_argument('input_dir', help='Directory previous Smartva output')
+    parser.add_argument('input_dir', help='Directory of previous Smartva '
+                        'output. The symptoms files will be used.')
     parser.add_argument('--hce', action='store_true')
     parser.add_argument('--short', action='store_true')
     parser.add_argument('--n-splits', type=int, default=2)
+    parser.add_argument('--subset', default=None, type=int, nargs=2,
+        help=('Define the range of splits implemented in this run. Pass two '
+              'ints separated by a spaces. Numbers should range between 0 and '
+              'splits minus 1'))
     args = parser.parse_args()
     main(**vars(args))

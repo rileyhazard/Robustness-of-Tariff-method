@@ -70,15 +70,14 @@ def calc_gbd_cause_weights(module):
 
 
 def calc_probability_undetermined(X, y, module, n_splits=5, aggregation=None,
-                                  **kwargs):
+                                  subset=None, **kwargs):
     """
 
     """
     clf = TariffClassifier(**kwargs)
     sss = config_sss_model_selector(n_splits=n_splits)
-    cause_agg = get_cause_map(module, 'smartva_text', 'smartva_reporting')
-    cause_agg[float('nan')] = 'Undetermined'
-    results = out_of_sample_accuracy(X, y, clf, sss, aggregate=cause_agg)
+    results = out_of_sample_accuracy(X, y, clf, sss, aggregate=aggregation,
+                                     subset=subset)
 
     pred, *_ = results
     pred['undetermined'] = pred.prediction.isnull() | (pred.prediction == 'Undetermined')
