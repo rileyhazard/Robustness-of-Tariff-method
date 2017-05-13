@@ -31,30 +31,35 @@ def make_output_dir():
     return path
 
 
-def main(dataset, module, input_dir, n_splits=2, hce=True, short=True,
-         subset=None):
+def main(dataset, module, input_dir=None, n_splits=2, hce=True, short=True,
+         subset=None, probs=None):
     output_dir = make_output_dir()
+    instrument = 'short' if short else 'full'
     gbd_csmf = calc_gbd_cause_weights(module)
 
-    cb = get_codebook(f'{module}_symptom')
-    instrument = 'short' if short else 'full'
-    hce_cols = np.full(len(cb), True, dtype=bool) if hce else (cb.hce == hce)
-    cols = cb.loc[hce_cols & cb[instrument].astype(bool)].index
+    if probs:
+        undetermined_prob = pd.read_csv(probs, index_col=0).undetermined
 
-    X, y = get_X_y(dataset, module, input_dir)
-    metadata_cols = ['age_', 'sex_', 'rules_']
-    drop_cols = X.columns.difference(cols).difference(metadata_cols)
-    X.loc[:, drop_cols] = 0   # keep but mask to avoid index errors
+    else:
+        cb = get_codebook(f'{module}_symptom')
+        hce_cols = np.full(len(cb), True, dtype=bool) if hce else (cb.hce == hce)
+        cols = cb.loc[hce_cols & cb[instrument].astype(bool)].index
 
-    cause_map = get_cause_map(module, 'smartva_text', 'smartva_reporting')
-    cause_map[float('nan')] = 'Undetermined'
-    kwargs = {
-        'n_splits': n_splits,
-        'aggregation': cause_map,
-        'subset': subset,
-        **get_smartva_config(module)
-    }
-    undetermined_prob = calc_probability_undetermined(X, y, module, **kwargs)
+        X, y = get_X_y(dataset, module, input_dir)
+        metadata_cols = ['age_', 'sex_', 'rules_']
+        drop_cols = X.columns.difference(cols).difference(metadata_cols)
+        X.loc[:, drop_cols] = 0   # keep but mask to avoid index errors
+
+        cause_map = get_cause_map(module, 'smartva_text', 'smartva_reporting')
+        cause_map[float('nan')] = 'Undetermined'
+        kwargs = {
+            'n_splits': n_splits,
+            'aggregation': cause_map,
+            'subset': subset,
+            **get_smartva_config(module)
+        }
+        undetermined_prob = calc_probability_undetermined(X, y, module,
+                                                          **kwargs)
 
     weights = calc_redistribution_weights(gbd_csmf, undetermined_prob)
 
@@ -80,7 +85,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('dataset', choices=['phmrc', 'nhmrc'])
     parser.add_argument('module', choices=['adult', 'child', 'neonate'])
-    parser.add_argument('input_dir', help='Directory of previous Smartva '
+    parser.add_argument('--input_dir', help='Directory of previous Smartva '
                         'output. The symptoms files will be used.')
     parser.add_argument('--hce', action='store_true')
     parser.add_argument('--short', action='store_true')
@@ -89,5 +94,6 @@ if __name__ == '__main__':
         help=('Define the range of splits implemented in this run. Pass two '
               'ints separated by a spaces. Numbers should range between 0 and '
               'splits minus 1'))
+    parser.add_argument('--probs', help='Path to undetermined probabilities.')
     args = parser.parse_args()
     main(**vars(args))
