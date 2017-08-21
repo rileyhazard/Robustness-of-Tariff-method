@@ -1,4 +1,4 @@
-from rule import Rule
+from src.rules.rule import Rule
 
 
 def test_no_docstring_info():

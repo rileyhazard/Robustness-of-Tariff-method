@@ -5,7 +5,7 @@ import types
 import pandas as pd
 import pytest
 
-from getters import *
+from tariff2.loaders import *
 
 
 @pytest.mark.parametrize('dataset', ['phmrc', 'nhmrc'])
@@ -114,6 +114,7 @@ class TestGetMetadata(object):
             'child': {1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E'},
         }
         assert md == expected
+
 
 def test_get_smartva_presymptom_file(tmpdir, module):
     f_name = '{}-presymptom.csv'.format(module)

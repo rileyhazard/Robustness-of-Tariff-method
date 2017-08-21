@@ -47,3 +47,7 @@ def test_safe_align_sequences(seqs):
     shapes = np.unique([seq.shape for seq in aligned])
     assert len(shapes) == 1
     assert int(shapes[0])  # only one dimension
+
+
+def test_make_mask():
+  np.sum(mask) == sum([len(v) for k, v in matrix.items()])

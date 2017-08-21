@@ -4,8 +4,8 @@ import os
 import pandas as pd
 import pytest
 
-from rule import Rule
-from specification import RULES_FOR_DOC, RULES_BY_MODULE
+from src.rules.rule import Rule
+from src.rules.specification import RULES_FOR_DOC, RULES_BY_MODULE
 
 
 MODULES = ['adult', 'child', 'neonate']

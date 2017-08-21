@@ -1,5 +1,3 @@
-import math
-
 import pandas as pd
 import numpy as np
 
@@ -346,7 +344,7 @@ def correct_csmf_accuracy(uncorrected):
     Returns:
         float
     """
-    return (uncorrected - (1 - math.e**-1)) / (1 - (1 - math.e**-1))
+    return (uncorrected - (1 - np.e**-1)) / (1 - (1 - np.e**-1))
 
 
 def calc_cccsmf_accuracy(actual, predicted):

@@ -152,9 +152,8 @@ def load_smartva_tariff_data(path, module):
 def load_smartva_tariff_matrix(path, module):
     matrix_path = os.path.join(path, 'smartva', 'data',
                                'tariffs-{}.csv'.format(module))
-    df = pd.read_csv(matrix_path)
-    df['cause'] = df.xs_name.str.lstrip('cause').astype(int)
-    df = df.drop('xs_name', axis=1).set_index('cause')
+    df = pd.read_csv(matrix_path, index_col=0)
+    df.index = df.index.str.lstrip('cause').astype(int)
     return df
 
 

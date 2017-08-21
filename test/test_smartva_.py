@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from smartva_ import SmartvaClassifier
+from src.smartva_ import SmartvaClassifier
 
 needs_smartva_repo = pytest.mark.skipif(
     not os.path.exists(pytest.config.getoption("--smartva-repo")),

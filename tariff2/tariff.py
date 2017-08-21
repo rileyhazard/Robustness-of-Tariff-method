@@ -572,8 +572,9 @@ def rank_samples(X_test, X_train):
 
     if mem_req > ram:
         # Samples are ranked within the entire training set, however they are
-        # independent of other observations. We can split the test data as
-        # much as we need to, but must leave the training data intact.
+        # independent of other observations in the test array. We can split
+        # the test data as much as we need to, but must leave the training
+        # data intact. This trades speed for a lower memory footprint.
         splits = int(mem_req / ram) + 1
         ranked = np.concatenate([_rank_samples(X_sub, X_train)
                                  for X_sub in np.array_split(X_test, splits)])
@@ -607,7 +608,6 @@ def _rank_samples(X_test, X_train):
         the resampled adult uniform dataset, is about 11 MB. If the test array
         has more than about 5000 samples, this function starts dragging. It
         also might explode your computer's memory, hence the warning.
-
     """
     X_test_3d = X_test[:, :, None]
     X_train_3d = X_train.T[None, :, :]

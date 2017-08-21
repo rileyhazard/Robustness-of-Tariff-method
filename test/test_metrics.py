@@ -3,7 +3,7 @@ import itertools
 import numpy as np
 import pytest
 
-from src.metrics import *
+from tariff.metrics import *
 
 
 def rand_uniform(rs, n_classes, n_samples):
@@ -45,7 +45,7 @@ rand_gen_pairs = list(itertools.product(rand_generators, repeat=2))
 def test_calc_ccc_random(rand1, rand2):
     rs = np.random.RandomState(2301598121)
     n_classes = 10
-    n_samples = 10000
+    n_samples = 5000
     n_bootstraps = 5000
     cccs = []
     for _ in range(n_bootstraps):
@@ -66,7 +66,7 @@ def test_calc_cccsmf_random():
     rs = np.random.RandomState(2301598121)
     n_classes = 100
     n_samples = 10000
-    n_bootstraps = 5000
+    n_bootstraps = 1000
     cccsmfs = []
     for _ in range(n_bootstraps):
         actual = rs.dirichlet(np.ones(n_classes))
