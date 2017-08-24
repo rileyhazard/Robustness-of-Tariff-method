@@ -1,9 +1,13 @@
 import os
+import sys
 
 import pytest
 
-SMARTVA_REPO = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                            '..', '..', 'smartva')
+
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, REPO)
+
+SMARTVA_REPO = os.path.join(os.path.dirname(REPO), 'smartva')
 
 
 def pytest_addoption(parser):

@@ -57,7 +57,7 @@ test-results.xml
 *.log
 
 # Sphinx documentation
-docs/build/
+docs/_build/
 
 # PyBuilder
 target/

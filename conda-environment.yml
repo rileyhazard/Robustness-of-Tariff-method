@@ -1,0 +1,21 @@
+name: tariff2
+channels:
+- defaults
+dependencies:
+- python=3.6
+- ipython
+- jinja2
+- jupyter
+- matplotlib
+- numexpr
+- numpy
+- pandas
+- pip
+- pytest=3
+- pyyaml
+- scikit-learn>=0.19.*
+- seaborn
+- sphinx>=1.5.*
+- xlrd
+- pip:
+  - stemming

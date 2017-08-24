@@ -1,8 +1,9 @@
 #$ -S /bin/bash
-REPO_DIR=$1
-CONDAENV=$2
-shift 2;
-cd $REPO_DIR
+cd $(dirname $0)/..
+REPO_DIR=`pwd`
+
+CONDAENV=$1
+shift 1;
 
 echo "Cluster: $SGE_CLUSTER_NAME"
 echo "Architecture: $ARC"
