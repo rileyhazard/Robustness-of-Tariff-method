@@ -1,372 +1,298 @@
-from __future__ import division, print_function
+import logging
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import StratifiedShuffleSplit, LeavePGroupsOut
-from sklearn.utils import resample, safe_indexing
-from sklearn.utils.validation import check_X_y
+from sklearn.utils import safe_indexing
+from sklearn.utils.validation import (
+    check_random_state,
+    check_X_y,
+    column_or_1d,
+)
+from sklearn.dummy import DummyClassifier
+from sklearn.model_selection import StratifiedShuffleSplit, LeavePOut
 
-from tariff2.metrics import (
+from .metrics import (
     calc_ccc,
     calc_csmf_accuracy_from_csmf,
     correct_csmf_accuracy
 )
 
 
-def prediction_accuracy(clf, X_train, y_train, X_test, y_test, aggregate=None,
-                        resample_test=True, resample_size=1):
-    """Mesaure prediction accuracy of a classifier.
+LOG = logging.getLogger('tariff2.validation')
+
+
+def dirichlet_resample(arr, n_samples=None, random_state=None):
+    """Resample an array drawing from a dirichlet distribution.
+
+    Metrics which estimate the population-level accuracy of classifiers are
+    sensitive to cause composition of the sample. Robust classifiers should
+    perform well regardless of the cause composition. To properly assess the
+    performance at the population level, the predictions should be tested
+    using multiple samples with different distributions. Varying the cause
+    composition accomplished by drawing samples from an uniformative dirichlet
+    distribution and averaging the performance across draws.
 
     Args:
-        clf: sklearn-like classifier object. It must implement a fit method
-            with the signature ``(X, y) --> self`` and a predict method with
-            a signature ``X --> y``
-        X_train (matrix-like): samples by features matrix used for training
-        y_train (list-like): target values used for training
-        X_test (matrix-like): samples by features matrix used for testing
-        y_test (list-like): target values to compare predictions against
-        aggregate (dict): mapping of classes to new classes. Applied
-            to the predictions before calculating performance.
-        resample_test (bool): resample test data to a dirichlet distribution
-        resample_size (float): scalar applied to n of samples to determine
-            output resample size.
+        arr (array-like): vector of categoricals for each sample
+        n_samples (int): number of samples to draw. If None it will default
+            to the length of arr
+        random_state (int): seed value or np.random.RandomState instance
 
     Returns:
-        preds (dataframe): two column dataframe with actual and predicted
-            values for all observations
-        csmfs (dataframe): two column dataframe with actual and predicted
-            proportions for each cause
-        trained (dataframe): matrix of learned associations between
-            cause/symptom pairs from the training data
-        ccc (dataframe): chance-correct concordance for each cause in one row
-        accuracy (dataframe): summary accuracy measures in one row
+        np.array: array of new indicies
+
+    Examples:
+        >>> y_true = np.random.choice(np.arange(10), 100)
+        >>> df = pd.DataFrame(np.random.randint(0, 2, size=(100, 25)))
+        >>> idx = dirichlet_resample(y_true)
+        >>> X = df.iloc[idx]
     """
-    check_X_y(X_train, y_train, dtype=None)
-    check_X_y(X_test, y_test, dtype=None)
-
-    if resample_test:
-        n_samples = round(resample_size * len(X_test))
-        X_test, y_test = dirichlet_resample(X_test, y_test, n_samples)
-
-    y_pred = clf.fit(X_train, y_train).predict(X_test)
-    y_pred = pd.Series(y_pred)
-
-    # Some classifier (like Tariff and InSilicoVA) calculate population level
-    # estimates in a manner slightly decoupled from the individual
-    # predictions. If this is  the case, use these estimates instead of
-    # collapsing individual predictions.
-    if hasattr(clf, 'csmf'):
-        csmf_pred = clf.csmf
-    else:
-        csmf_pred = y_pred.value_counts(dropna=False) / len(y_pred)
-
-    y_actual = pd.Series(y_test)
-
-    if aggregate:
-        if any([isinstance(x, str) for x in aggregate.keys()]):
-           y_pred = y_pred.astype(np.object_)
-        y_pred = y_pred.replace(aggregate)
-        y_actual = y_actual.replace(aggregate)
-        csmf_pred.index = csmf_pred.index.to_series().astype(np.object_).replace(aggregate)
-        #import pdb; pdb.set_trace()
-        if not csmf_pred.index.is_unique:
-            csmf_pred = csmf_pred.groupby(level=0).sum()
-
-    csmf_actual = y_actual.value_counts() / len(y_actual)
-
-    # Undetermined individual predictions are coded as nan and are dropped
-    # by value_count. Rescale the total predicted csmf to be 1.
-    csmf_pred = csmf_pred / csmf_pred.sum()
-    assert np.allclose(csmf_pred.sum(), csmf_actual.sum(), 1)
-
-    preds = pd.concat([y_actual, y_pred], axis=1)
-    preds.index.name = 'sid'
-    preds.columns = ['actual', 'prediction']
-
-    # It's possible for classifier to not predict classes in the training data.
-    # Non-sklearn classifiers (like Tariff) can also predict classes other
-    # than those in the train set (e.g. missing). Preserve these additional
-    # classes to return.
-    csmf = pd.concat([csmf_actual, csmf_pred], axis=1).fillna(0)
-    csmf.index.name = 'cause'
-    csmf.columns = ['actual', 'prediction']
-
-    ccc = pd.Series({cause: calc_ccc(cause, y_actual, y_pred)
-                     for cause in y_actual.unique()})
-
-    # Use all and only the classes from the training data to predict csmf
-    causes = csmf_actual.index
-    csmf_acc = calc_csmf_accuracy_from_csmf(csmf['actual'],
-                                            csmf['prediction'])
-    cccsmf_acc = correct_csmf_accuracy(csmf_acc)
-
-    accuracy = pd.DataFrame([[
-        ccc.mean(),
-        ccc.median(),
-        csmf_acc,
-        cccsmf_acc,
-    ]], columns=['mean_ccc', 'median_ccc', 'csmf_accuracy', 'cccsmf_accuracy'])
-
-    preds.reset_index(inplace=True)
-    ccc = ccc.reset_index()
-    ccc.columns = ['cause', 'ccc']
-    csmf.reset_index(inplace=True)
-    return preds, csmf, ccc, accuracy
-
-
-def dirichlet_resample(X, y, n_samples=None):
-    """Resample so that the predicted classes follow a dirichlet distribution
-
-    When using a stratified split strategy for validation the cause
-    distribution between the test and train splits are similiar. Resampling the
-    test data using a dirichlet distribution provides a cause distribution in
-    the test data which is uncorrelated to the cause distribution of the
-    training data. This is essential for correctly estimating accuracy at
-    the population level across a variety of population. A classifier which
-    knows the output distribution may perform well by only predicting the most
-    common causes regardless of the predictors. This classifier would easily
-    do better than chance. Alternatively, a classifier may a very high
-    sensitivity for only one cause and guess at random for all other causes.
-    If only tested in a population with a high prevalence of this cause, the
-    classifier may appear to be very good. Neither of these provide robust
-    classifier which can be widely used. Resampling the test split provides a
-    better estimate of out of sample validity. The dirichlet distribution is
-    conjugate prior of the multinomial distribution and always sums to one, so
-    it is suitable for resampling categorical data.
-
-    Args:
-        X (matrix-like): samples by features matrix
-        y (list-like): target values
-        n_samples (int): number of samples in output. If none this defaults
-            to the length of the input.
-
-    Return:
-        X_new (array or dataframe): resampled data
-        y_new (array or series): resampled predictions
-    """
-    # Preserve labels from dataframes, but coerce everything else to np.array
-    if isinstance(X, pd.DataFrame):
-        check_X_y(X, y, dtype=None)
-    else:
-        X, y = check_X_y(X, y, dtype=None)
-
-    if not n_samples:
-        n_samples = len(X)
-
-    classes = np.unique(y)
+    arr = column_or_1d(arr)
+    rs = check_random_state(random_state)
+    n_samples = n_samples or arr.shape[0]
+    causes = np.unique(arr)
 
     # Draw samples from a dirichlet distribution where the alpha value for
     # each class is the same
-    distribution = np.random.dirichlet(np.ones(len(classes)))
+    distribution = rs.dirichlet(np.ones(causes.shape[0]))
 
     # To calculate counts for each cause we multiply fractions through by the
     # desired sampled size and round down. We then add counts for the total
     # number of missing observations to achieve exactly the desired size.
-    counts = np.vectorize(int)(distribution * n_samples)
-    counts = counts + np.random.multinomial(n_samples - counts.sum(),
-                                            distribution)
+    counts = (distribution * n_samples).astype(int)
+    counts = counts + rs.multinomial(n_samples - counts.sum(), distribution)
 
-    X_new = [resample(safe_indexing(X, np.where(y == class_)), n_samples=cnt)
-             for cnt, class_ in zip(counts, classes)]
-    y_new = np.repeat(classes, counts)
-
-    if isinstance(X, pd.DataFrame):
-        X_new = pd.concat(X_new)
-        y_new = pd.Series(y_new, index=X_new.index)
-    else:
-        X_new = np.vstack(X_new)
-
-    return X_new, y_new
+    return np.concatenate([rs.choice(np.where(arr == cause)[0], size)
+                           for size, cause in zip(counts, causes)])
 
 
-def out_of_sample_accuracy(X, y, clf, model_selector, groups=None,
-                           tags=None, subset=None, aggregate=None,
-                           resample_test=True, resample_size=1):
-    """Mesaure out of sample accuracy of a classifier
+def dirichlet_resample_X_y(X, y, n_samples=None, random_state=None):
+    """Resample a matrix and an array drawing from a dirichlete distribution.
+
+    Convinience function for jointly sampling an outcome array and a predictor
+    array to a dirichlete distribution of outcomes.
 
     Args:
-        X (matrix-like): samples by features matrix
-        y (list-like): target values
-        clf: sklearn-like classifier object
-        model_selector (sklearn model_selection): iterator to produce
-            test-train splits with split_id method added
-        groups (list-like): encoded group labels for each sample
-        tags (dict): column -> constant, identifies added to the returned
-            dataframes
-        subset (tuple of int): splits to perform
-        aggregate (dict): mapping of classes to new classes. Applied
-            to the predictions before calculating performance.
-        resample_test (bool): resample test data to a dirichlet distribution
+        X (matrix-like): samples by predictors array
+        y (array-like sequence): vector of categoricals for each sample
+        n_samples (int): number of samples to draw. If None it will default
+            to the length of arr
+        random_state (int): seed value or np.random.RandomState instance
+
+    Returns:
+        tuple: resampled X array, resampled y array
+
+    See Also:
+        dirichlet_resample
+    """
+    check_X_y(X, y, dtype=None)
+    resample_index = dirichlet_resample(y, n_samples, random_state)
+    return safe_indexing(X, resample_index), safe_indexing(y, resample_index)
+
+
+def calc_performance(y_actual, y_pred, csmf_pred=None, split_id=''):
+    """Mesaure prediction accuracy of a classifier.
+
+    # All the outputs should be dataframes which can be concatentated and
+    # saved without the index
+    Args:
+        clf: sklearn-like classifier object. It must implement a fit method
+            with the signature ``(X, y) --> self`` and a predict method with
+            a signature ``(X) --> (y, csmf)``
+        X_train (dataframe): samples by features matrix used for training
+        y_train (series): target values used for training
+        X_actual (dataframe): samples by features matrix used for testing
+        y_actual (series): target values to compare predictions against
+        resample_actual (bool): resample test data to a dirichlet distribution
         resample_size (float): scalar applied to n of samples to determine
             output resample size.
 
     Returns:
-        (tuple of dataframes): results ``prediction_accuracy`` concatentated
-            across splits
+        tuple:
+            * preds (dataframe): two column dataframe with actual and predicted
+                values for all observations
+            * csmfs (dataframe): two column dataframe with actual and predicted
+                cause-specific mortality fraction for each cause
+            * trained (dataframe): matrix of learned associations between
+                cause/symptom pairs from the training data
+            * ccc (dataframe): chance-correct concordance for each cause in one row
+            * accuracy (dataframe): summary accuracy measures in one row
 
-    See Also:
-        prediction_accuracy
     """
-    check_X_y(X, y, dtype=None)
+    preds = pd.concat([y_actual, y_pred], axis=1)
+    preds.index.name = 'ID'
+    preds.columns = ['actual', 'prediction']
+    preds.reset_index(inplace=True)
 
+    # Only calculate CCC for real causes. The classifier may predict causes
+    # which are not in the set of true causes. This primarily occurs when
+    # the classifier is run using default settings and no training or when it
+    # isn't properly learning impossible causes.
+    # Standardize output format (df with 1 row)
+    ccc = pd.DataFrame([{cause: calc_ccc(cause, y_actual, y_pred)
+                         for cause in y_actual.unique()}])
+
+    # It's possible for some causes to not be predicted
+    # These would result in missingness when aligning the csmf series
+    if csmf_pred is None:
+        csmf_pred = y_pred.value_counts(dropna=False, normalize=True)
+    csmf_actual = y_actual.value_counts(dropna=False, normalize=True)
+    csmf = pd.concat([csmf_actual, csmf_pred], axis=1).fillna(0)
+    csmf.index.name = 'cause'
+    csmf.columns = ['actual', 'prediction']
+    csmf.reset_index(inplace=True)   # standardize output format
+
+    csmf_acc = calc_csmf_accuracy_from_csmf(csmf.actual, csmf.prediction)
+    cccsmf_acc = correct_csmf_accuracy(csmf_acc)
+
+    # Standardize output format (df with 1 row)
+    accuracy = pd.DataFrame([[
+        ccc.iloc[0].mean(),
+        ccc.iloc[0].median(),
+        csmf_acc,
+        cccsmf_acc,
+    ]], columns=['mean_ccc', 'median_ccc', 'csmf_accuracy', 'cccsmf_accuracy'])
+
+    results = (preds, csmf, ccc, accuracy)
+    for result in results:
+        result['split'] = split_id
+    return results
+
+
+def validate_splits(X, y, clf, splits, subset=None, resample_size=None,
+                    random_state=None):
+    """Mesaure out of sample accuracy of a classifier.
+
+    Args:
+        X (dataframe): rows are records, columns are features
+        y (series): predictions for each record
+        clf sklearn-like classifier object. It must implement a fit method
+            with the signature ``(X, y) --> self`` and a predict method with
+            a signature ``(X) --> (y, csmf)``
+        n_splits (int): number of splits
+        subset (tuple of ints): splits to perform
+        test_size (float): proportion of data to use for the test split
+        resample_size ():
+        random_state: seed or random number generator object
+
+    Returns:
+        (tuple of dataframes): sames as ``calc_performance`` for every split
+            in ``subset`` with results concatenated.
+    """
+    rs = check_random_state(random_state)
     output = [[], [], [], []]
-    splits = model_selector.split(X, y, groups)
-    for i, (train_index, test_index) in enumerate(splits):
+    for i, (train_index, test_index, split_id) in enumerate(splits):
         if subset:
             start, stop = subset
             if i < start:
                 continue
             if i > stop:
                 break
+        LOG.debug(f'Determining performance for split {split_id}')
 
-        # Casting as pandas objects allows this function to accept both
-        # pandas an numpy inputs. It is advantageous to retain index/column
-        # labels if they exist, becaues the classifiers read and store labels
-        X_train = pd.DataFrame(X).iloc[train_index]
-        X_test = pd.DataFrame(X).iloc[test_index]
-        y_train = pd.Series(y).iloc[train_index]
-        y_train.index = X_train.index
-        y_test = pd.Series(y).iloc[test_index]
-        y_test.index = X_test.index
+        X_train = X.iloc[train_index]
+        y_train = y.iloc[train_index]
+        X_test = X.iloc[test_index]
+        y_test = y.iloc[test_index]
 
-        results = prediction_accuracy(clf, X_train, y_train, X_test, y_test,
-                                      aggregate=aggregate,
-                                      resample_test=resample_test,
-                                      resample_size=resample_size)
-        assert len(results) == len(output)
+        X_test, y_test = dirichlet_resample_X_y(X_test, y_test, resample_size,
+                                                random_state=rs)
 
-        try:
-            test_groups = np.unique(safe_indexing(groups, test_index))
-            split_id = model_selector.split_id(i, test_groups)
-        except (AttributeError, TypeError):
-            split_id = i
+        y_pred, csmf_pred = clf.fit(X_train, y_train).predict(X_test)
+        results = calc_performance(y_test, y_pred, csmf_pred, split_id)
 
-        for df in results:
-            df['split'] = split_id
+        for i, result in enumerate(results):
+            output[i].append(result)
 
-        for i, out in enumerate(output):
-            out.append(results[i])
-
-    for i in range(len(output)):
-        output[i] = pd.concat(output[i])
-
-    if tags:
-        for i, df in enumerate(output):
-            cols = df.drop('split', axis=1).columns.tolist()
-            cols = tags.keys() + ['split'] + cols
-            for col, tag in tags.items():
-                df[col] = tag
-            output[i] = df.loc[:, cols]
-
-    return tuple(output)
+    return list(map(pd.concat, output))
 
 
-def in_sample_accuracy(X, y, clf, aggregate=None, resample_test=True,
-                       resample_size=1):
-    """Mesaure in-sample accuracy of a classifier
+def validate_training(X, y, clf, n_splits, subset=None, resample_size=None,
+                      random_state=None):
+    rs = check_random_state(random_state)
+    output = [[], [], [], []]
+    for i in range(n_splits):
+        if subset:
+            start, stop = subset
+            if i < start:
+                continue
+            if i > stop:
+                break
+        LOG.debug(f'Determining performance for split {i}')
 
-    Args:
-        X (matrix-like): samples by features matrix
-        y (list-like): target values
-        clf: sklearn-like classifier object
-        aggregate (dict): mapping of classes to new classes. Applied
-            to the predictions before calculating performance.
-        resample_test (bool): resample test data to a dirichlet distribution
-        resample_size (float): scalar applied to n of samples to determine
-            output resample size.
+        X, y = dirichlet_resample_X_y(X, y, resample_size, random_state=rs)
 
-    Returns:
-        (tuple of dataframes): see ``prediction_accuracy``
+        y_pred, csmf_pred = clf.predict(X)
+        results = calc_performance(y, y_pred, csmf_pred, i)
 
-    See Also:
-        prediction_accuracy
-    """
-    return prediction_accuracy(clf, X, y, X, y, aggregate=aggregate,
-                               resample_test=resample_test,
-                               resample_size=resample_size)
+        for r, result in enumerate(results):
+            output[r].append(result)
 
-
-def no_train(X, y, clf, aggregate=None, resample_test=True, resample_size=1):
-    """Mesaure accuracy of a classifier of untrained classifier.
-
-    This is only relevant for algorithms like SmartVA and InSilicoVA which
-    ship with default training data.
-
-    Args:
-        X (matrix-like): samples by features matrix
-        y (list-like): target values
-        clf: sklearn-like classifier object
-        aggregate (dict): mapping of classes to new classes. Applied
-            to the predictions before calculating performance.
-        resample_test (bool): resample test data to a dirichlet distribution
-        resample_size (float): scalar applied to n of samples to determine
-            output resample size.
-
-    Returns:
-        (tuple of dataframes): see ``prediction_accuracy``
-
-    See Also:
-        prediction_accuracy
-    """
-    return prediction_accuracy(clf, None, None, X, y, aggregate=aggregate,
-                               resample_test=resample_test,
-                               resample_size=resample_size)
+    return list(map(pd.concat, output))
 
 
-def config_model_selector(model_selector, **kwargs):
-    """Return an sklearn model selector object to create test-train splits
+def out_of_sample_splits(X, y, n_splits=10, test_size=.25, random_state=None):
+    LOG.debug('Configure out-of-sample stratified shuffle splits')
+    rs = check_random_state(random_state)
+    splitter = StratifiedShuffleSplit(n_splits=n_splits, test_size=test_size,
+                                      random_state=rs)
+    for i, (train_index, test_index) in splitter.split(X, y):
+        yield train_index, test_index, i
 
-    Args:
-        model_selector (str): 'sss' for StratifiedShuffleSplit or 'holdout'
-            for LeavePGroupsOut
-        **kwargs: parameters to pass to the model selector constructor
 
-    Returns:
-        model_selector: Sklearn object to compute test-train splits
-    """
-    if model_selector == 'sss':
-        return config_sss_model_selector(**kwargs)
-    elif model_selector == 'holdout':
-        return config_holdout_model_selector(**kwargs)
+def hold_out_splits(X, y, groups, p=1, group_map=None):
+    LOG.debug('Configuring hold-out splits')
+    if isinstance(group_map, dict):
+        group_map = group_map.get
+    elif callable(group_map):
+        pass
     else:
-        raise ValueError("Unknown model selector '{}'".format(model_selector))
+        def group_map(x):
+            return x
+
+    splitter = LeavePOut(p)
+    for train_index, test_index in splitter.split(X, y, groups):
+        held_out = '-'.join([group_map(g) for g in np.unique(y[test_index])])
+        yield train_index, test_index, held_out
 
 
-def config_sss_model_selector(**kwargs):
-    """Configure the StratifiedShuffleSplit model selector
+class RandomClassifier(DummyClassifier):
+    """Classifier to generate predictions uniformly at random
 
-    Args:
-        n_splits (int): number of splits to perform [default=2]
-        test_size(float): proportion of data to use in test split [default=.25]
-        random_state: seed for random number generator
-
-    Returns
-        model_selectors
+    This subclasses sklearn.dummy.DummyClassifier and overrides the fit
+    and predict method.
     """
-    n_splits = kwargs.get('n_splits', 2)
-    test_size = kwargs.get('test_size', .25)
-    random_state = kwargs.get('random_state', np.random.RandomState(8675309))
-    selector = StratifiedShuffleSplit(n_splits=n_splits, test_size=test_size,
-                                      random_state=random_state)
-    return selector
 
+    def __init__(self, random_state=None, **kwargs):
+        self.strategy = 'uniform'
+        self.constant = 1
+        self.random_state = random_state
+        for arg, val in kwargs.items():
+            setattr(self, arg, val)
 
-def config_holdout_model_selector(**kwargs):
-    """Configure the LeavePGroupsOut model selector
+    def fit(self, X, y, sample_weight=None):
+        if y is None:
+            y = np.arange(10)
+        return super().fit(X, y, sample_weight)
 
-    This adds a method to calculate the split_id from the test groups.
+    def predict(self, X):
+        """Perform classification on test X.
 
-    Args:
-        n_groups (int): number of groups in the test split [default=1]
+        This overrides the default behavior by of Sklearn classifiers by
+        returning both individual and population level predictions. This is
+        necessary because other classifiers estimate population distributions
+        in a manner slightly de-coupled from individual predictions.
 
-    Returns:
-        model_selector
-    """
-    n_groups = kwargs.get('n_groups', 1)
-    selector = LeavePGroupsOut(n_groups=n_groups)
+        Args:
+            X (dataframe): samples by features to test
 
-    def split_id(i, test_groups):
-        return 'test:{}'.format('+'.join(map(str, np.unique(test_groups))))
-    selector.split_id = split_id
-
-    return selector
+        Returns:
+            tuple:
+                * predictions (series): individual level prediction
+                * csmf: (series): population level predictions
+        """
+        idx = getattr(X, 'index', np.arange(X.shape[0]))
+        pred = super().predict(X)
+        indiv = pd.Series(pred, index=idx)
+        csmf = indiv.value_counts() / pred.shape[0]
+        return indiv, csmf

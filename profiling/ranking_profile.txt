@@ -1,0 +1,78 @@
+n_test = 100
+============
+root@e1e3caedb90a:/home# python -m cProfile -s cumtime test_ranking.py | grep test_ranking
+        1    0.000    0.000    1.479    1.479 test_ranking.py:1(<module>)
+        1    0.123    0.123    0.386    0.386 test_ranking.py:15(rank_samples)
+        1    0.002    0.002    0.025    0.025 test_ranking.py:6(data)
+        1    0.000    0.000    0.003    0.003 test_ranking.py:36(rank_samples_better)
+        1    0.000    0.000    0.001    0.001 test_ranking.py:42(<listcomp>)
+        1    0.000    0.000    0.001    0.001 test_ranking.py:39(<listcomp>)
+
+n_test = 500
+============
+root@e1e3caedb90a:/home# python -m cProfile -s cumtime test_ranking.py | grep test_ranking
+        1    0.000    0.000    3.089    3.089 test_ranking.py:1(<module>)
+        1    0.600    0.600    1.976    1.976 test_ranking.py:15(rank_samples)
+        1    0.002    0.002    0.026    0.026 test_ranking.py:6(data)
+        1    0.000    0.000    0.009    0.009 test_ranking.py:36(rank_samples_better)
+        1    0.000    0.000    0.004    0.004 test_ranking.py:42(<listcomp>)
+        1    0.000    0.000    0.004    0.004 test_ranking.py:39(<listcomp>)
+
+n_test = 1000
+=============
+root@e1e3caedb90a:/home# python -m cProfile -s cumtime test_ranking.py | grep test_ranking
+        1    0.000    0.000    5.025    5.025 test_ranking.py:1(<module>)
+        1    1.211    1.211    3.925    3.925 test_ranking.py:15(rank_samples)
+        1    0.002    0.002    0.025    0.025 test_ranking.py:6(data)
+        1    0.000    0.000    0.015    0.015 test_ranking.py:36(rank_samples_better)
+        1    0.000    0.000    0.007    0.007 test_ranking.py:42(<listcomp>)
+        1    0.000    0.000    0.007    0.007 test_ranking.py:39(<listcomp>)
+
+n_test = 5000
+=============
+root@e1e3caedb90a:/home# python -m cProfile -s cumtime test_ranking.py | grep test_ranking
+        1    0.002    0.002   21.129   21.129 test_ranking.py:1(<module>)
+        1    6.118    6.118   19.954   19.954 test_ranking.py:15(rank_samples)
+        1    0.006    0.006    0.085    0.085 test_ranking.py:36(rank_samples_better)
+        1    0.001    0.001    0.039    0.039 test_ranking.py:39(<listcomp>)
+        1    0.000    0.000    0.037    0.037 test_ranking.py:42(<listcomp>)
+        1    0.002    0.002    0.028    0.028 test_ranking.py:6(data)
+
+n_test = 7000
+=============
+root@e1e3caedb90a:/home# python -m cProfile -s cumtime test_ranking.py | grep test_ranking
+        1    0.018    0.018  142.695  142.695 test_ranking.py:1(<module>)
+        1   10.906   10.906  140.292  140.292 test_ranking.py:15(rank_samples)
+        1    0.020    0.020    0.615    0.615 test_ranking.py:36(rank_samples_better)
+        1    0.034    0.034    0.525    0.525 test_ranking.py:39(<listcomp>)
+        1    0.000    0.000    0.062    0.062 test_ranking.py:42(<listcomp>)
+        1    0.003    0.003    0.030    0.030 test_ranking.py:6(data)
+
+n_test = 10,000
+===============
+!!!Linux killed process for being over 2GB of memory so the original implemetation was dropped
+
+root@e1e3caedb90a:/home# python -m cProfile -s cumtime test_ranking.py | grep test_ranking
+        1    0.001    0.001    0.696    0.696 test_ranking.py:1(<module>)
+        1    0.008    0.008    0.142    0.142 test_ranking.py:36(rank_samples_better)
+        1    0.000    0.000    0.078    0.078 test_ranking.py:42(<listcomp>)
+        1    0.000    0.000    0.049    0.049 test_ranking.py:39(<listcomp>)
+        1    0.004    0.004    0.033    0.033 test_ranking.py:5(data)
+
+n_test = 100,000
+================
+root@e1e3caedb90a:/home# python -m cProfile -s cumtime test_ranking.py | grep test_ranking
+        1    0.004    0.004    2.018    2.018 test_ranking.py:1(<module>)
+        1    0.078    0.078    1.319    1.319 test_ranking.py:36(rank_samples_better)
+        1    0.001    0.001    0.560    0.560 test_ranking.py:42(<listcomp>)
+        1    0.001    0.001    0.509    0.509 test_ranking.py:39(<listcomp>)
+        1    0.025    0.025    0.114    0.114 test_ranking.py:5(data)
+
+n_test = 1,000,000
+==================
+root@e1e3caedb90a:/home# python -m cProfile -s cumtime test_ranking.py | grep test_ranking
+        1    0.052    0.052   14.615   14.615 test_ranking.py:1(<module>)
+        1    0.830    0.830   13.583   13.583 test_ranking.py:36(rank_samples_better)
+        1    0.001    0.001    5.593    5.593 test_ranking.py:42(<listcomp>)
+        1    0.001    0.001    5.405    5.405 test_ranking.py:39(<listcomp>)
+        1    0.182    0.182    0.768    0.768 test_ranking.py:5(data)

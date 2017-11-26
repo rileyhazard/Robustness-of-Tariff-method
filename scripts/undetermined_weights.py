@@ -90,7 +90,8 @@ if __name__ == '__main__':
     parser.add_argument('--hce', action='store_true')
     parser.add_argument('--short', action='store_true')
     parser.add_argument('--n-splits', type=int, default=2)
-    parser.add_argument('--subset', default=None, type=int, nargs=2,
+    parser.add_argument(
+        '--subset', default=None, type=int, nargs=2,
         help=('Define the range of splits implemented in this run. Pass two '
               'ints separated by a spaces. Numbers should range between 0 and '
               'splits minus 1'))

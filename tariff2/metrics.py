@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from tariff2.utils import safe_align_sequences
+from .utils import safe_align_sequences
 
 
 def calc_sensitivity(class_, actual, predicted):

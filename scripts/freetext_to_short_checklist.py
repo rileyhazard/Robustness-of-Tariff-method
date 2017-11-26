@@ -1,3 +1,5 @@
+import argparse
+import os
 import re
 import pandas as pd
 from stemming.porter2 import stem
@@ -86,18 +88,27 @@ def get_words(series):
         text.replace(k, v)
     words = [stem(word) for word in set(text.split())
              if word in WORD_MAPS[module].values()]
-    return pd.Series({col: 1 if word in words else 0
+    return pd.Series({col: int(word in words)
                       for col, word in WORD_MAPS[module].items()})
 
 
-def main(infile, outfile):
-    df = pd.read_csv(infile, encoding='latin1')
+def convert_freetext_to_checklist(df):
     words = df.apply(get_words, axis=1)
     df[words.columns] = words
-    df = df.drop(TEXT_COLS.values(), axis=1)
+    return df.drop(TEXT_COLS.values(), axis=1)
+
+
+def main(infile, outfile):
+    df = pd.read_csv(infile, encoding='utf8')
+    df = convert_freetext_to_checklist(df)
+    os.makedirs(os.path.dirname(outfile), exist_ok=True)
     df.to_csv(outfile, index=False, encoding='utf8')
 
 
 if __name__ == '__main__':
-    import sys
-    main(sys.argv[1], sys.argv[2])
+    parser = argparse.ArgumentParser(
+        description='Convert the PHMRC Full Instrument open response columns '
+                    'into PHMRC Shortened Instrument checklist columns.')
+    parser.add_argument('infile', help='Location of a csv file with ODK data')
+    parser.add_argument('outfile', help='Location of the output file')
+    main(*vars(parser.parse_args()))

@@ -156,7 +156,8 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
         Returns:
             pred (list-like): individual level predictions
         """
-        check_is_fitted(self, ['tariffs_', 'X_uniform_', 'cutoff_ranks_'])
+        check_is_fitted(self, ['causes_', 'tariffs_', 'X_uniform_',
+                               'cutoff_ranks_'])
 
         input_is_df = isinstance(X, pd.DataFrame)
         df_index = X.index.copy() if input_is_df else None
@@ -203,6 +204,9 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
             uncensored = pd.DataFrame(uncensored, df_index, self.causes_)
             valid = pd.DataFrame(valid, df_index, self.causes_)
             pred = pd.Series(pred, df_index, name='prediction')
+
+        if not np.issubdtype(self.causes_.dtype.type, np.number):
+            pred = pred.fillna('Undetermined')
 
         self.metadata_ = metadata
         self.scored_ = scored
@@ -336,7 +340,7 @@ def calc_insignificant_tariffs(X, y, bootstraps=500, ui=(2.5, 97.5),
     return insig
 
 
-def round_tariffs(tariffs, p=0.5):
+def round_tariffs(tariffs, p=0.5, check=True):
     """Round tariffs to a given precision
 
     Args:
@@ -346,11 +350,9 @@ def round_tariffs(tariffs, p=0.5):
     Returns:
         tariffs (dataframe): rounded tariff values
     """
-    arr = check_array(tariffs)
-    arr = np.apply_over_axes(lambda x, a: np.round(x / p) * p, arr, 1)
-    if isinstance(tariffs, pd.DataFrame):
-        arr = pd.DataFrame(arr, tariffs.index, tariffs.columns)
-    return arr
+    if check:
+        check_array(tariffs)
+    return np.round(tariffs / p) * p
 
 
 def remove_spurious_associations(tariffs, spurious, causes=None,
@@ -531,18 +533,16 @@ def calc_cutoffs(X, y, cutoff=95):
     # between predictions using the same data
     X_sorted = X.argsort(0, kind='mergesort')[::-1]
 
-    ranks, scores = [], []
-    for j in range(X.shape[1]):
-        ranks_j = np.where(y[X_sorted[:, j]] == j)[0] + 1
-        rank = np.percentile(ranks_j, cutoff, interpolation='higher')
-        ranks.append(rank)
-        scores.append(X[rank - 1, j])
+    ranks = [np.percentile(np.where(y[X_sorted[:, j]] == j)[0] + 1, cutoff,
+                           interpolation='higher')
+             for j in range(X.shape[1])]
+
+    scores = X[ranks - 1, np.arange(X.shape[1])]
 
     if input_is_df:
         scores = pd.Series(scores, causes)
         ranks = pd.Series(ranks, causes)
     else:
-        scores = np.array(scores)
         ranks = np.array(ranks)
 
     return scores, ranks
