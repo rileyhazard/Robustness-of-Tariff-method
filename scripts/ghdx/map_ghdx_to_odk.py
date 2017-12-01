@@ -1,33 +1,50 @@
-import os
+from functools import partial
+import logging
 import warnings
 
+import click
 import pandas as pd
 
-from tariff2 import MODULES, REPO_DIR
-from tariff2.data.map_ghdx_data import *
-from tariff2.loaders import get_codebook
+from download_ghdx import MODULES, OUT_DIR as INPUT_DIR
+from ghdx2odk_mapping_data import (
+    ODK_AGE_VARS,
+    VAR_CONVERSION_MAP,
+    DURATION_VARS,
+    MULTISELECT_CATEGORICAL_VARS,
+    MULTISELECT_BINARY_VARS,
+    FREETEXT_VARS,
+    ODK_FREETEXT_SHORT_TO_LONG,
+)
 
 
-GHDX_CODEBOOK = 'IHME_PHMRC_VA_DATA_CODEBOOK_Y2013M09D11_0.csv'
-GHDX_FILENAME = 'IHME_PHMRC_VA_DATA_{}_Y2013M09D11_{}.csv'
-GHDX_DIR = os.path.join(REPO_DIR, 'data', 'ghdx')
+REPO = INPUT_DIR.parent.parent.parent
+GHDX_DATA_DIR = REPO / 'data/ghdx'
+CODEBOOKS_DIR = REPO / 'codebooks'
+OUT_DIR = GHDX_DATA_DIR / 'odk'
+
+
+fmt_blue = partial(click.style, bold=True, fg='blue')
+fmt_magenta = partial(click.style, bold=True, fg='magenta')
 
 
 def load_ghdx_data(module):
     """Load GHDx PHMRC files from the repo"""
-    i = 2 if module == 'child' else 1
-    filename = GHDX_FILENAME.format(module.upper(), i)
+    module = module.upper()
+    filepath = next(INPUT_DIR.glob(f'*{module}*.csv'))
+    logging.info(fmt_blue('Loading: ') + str(filepath))
+
     with warnings.catch_warnings():
         warnings.simplefilter('ignore', pd.io.common.DtypeWarning)
-        df = pd.read_csv(os.path.join(GHDX_DIR, filename))
-    df['sid'] = df.module + df.newid.astype(int).astype(str)
-    return df.set_index('sid')
+        return pd.read_csv(filepath, dtype={'newid': str}) \
+                 .assign(sid=lambda df: df.module + df.newid) \
+                 .set_index('sid')
 
 
 def save_ghdx_gold_standards():
-    gs_cols = ['site', 'module', 'gs_text46', 'gs_text34', 'gs_level']
-    outfile = os.path.join(REPO_DIR, 'data', 'gold_standards', 'ghdx_gs.csv')
+    filepath = GHDX_DATA_DIR / 'gold_standards/ghdx_gs.csv'
+    filepath.parent.mkdir(parents=True, exist_ok=True)
 
+    gs_cols = ['site', 'module', 'gs_text46', 'gs_text34', 'gs_level']
     df = pd.concat([load_ghdx_data(module)[gs_cols] for module in MODULES])
 
     # Nobody cares about the 11 neonate causes, only the 6, so replace it
@@ -35,12 +52,17 @@ def save_ghdx_gold_standards():
     df.loc[neonate, 'gs_text46'] = df.loc[neonate, 'gs_text34']
 
     df.module = df.module.str.lower()
-    df.drop('gs_text34', axis=1).to_csv(outfile)
+    df.drop('gs_text34', axis=1)
+
+    logging.info(fmt_magenta('Saving: ') + str(filepath))
+    df.to_csv(filepath)
 
 
 def clean_ghdx_codebook():
     """Clean the codebock and add information about column type"""
-    df = pd.read_csv(os.path.join(GHDX_DIR, GHDX_CODEBOOK), index_col=0)
+    filepath = next(INPUT_DIR.glob('*CODEBOOK*.csv'))
+    logging.info(fmt_blue('Loading: ') + str(filepath))
+    df = pd.read_csv(filepath, index_col=0)
 
     df.loc[df.coding.notnull(), 'type'] = 'categorical'
     df.loc[df.coding.isnull(), 'type'] = 'numeric'
@@ -70,30 +92,6 @@ def clean_ghdx_codebook():
     # for missing for child weight at previous medical visits
     df.loc[['c5_07_1', 'c5_07_2'], 'coding'] = '9999 "Don\'t Know"'
 
-    df.to_csv(os.path.join(REPO_DIR, 'codebooks', 'ghdx.csv'))
-    return df
-
-
-def load_fixed_ghdx_data(module):
-    """Load GHDx PHMRC files from the repo and apply various data fixes.
-
-    Args:
-        module (str): 'adult', 'child', or 'neonate'
-
-    Returns:
-        (dataframe): fixed GHDx data
-
-    See Also:
-        fix_ghdx_ages
-        fix_ghdx_pox
-        fix_ghdx_injuries
-        fix_ghdx_birth_weight
-    """
-    df = load_ghdx_data(module)
-    df = fix_ghdx_ages(df)
-    df = fix_ghdx_pox(df)
-    df = fix_ghdx_injuries(df)
-    df = fix_ghdx_birth_weights(df)
     return df
 
 
@@ -203,6 +201,29 @@ def fix_ghdx_birth_weights(df):
     return df
 
 
+def fixed_ghdx_data(df):
+    """Load GHDx PHMRC files from the repo and apply various data fixes.
+
+    Args:
+        module (str): 'adult', 'child', or 'neonate'
+
+    Returns:
+        (dataframe): fixed GHDx data
+
+    See Also:
+        fix_ghdx_ages
+        fix_ghdx_pox
+        fix_ghdx_injuries
+        fix_ghdx_birth_weight
+    """
+    logging.debug('    Fixing GHDx data errors')
+    df = fix_ghdx_ages(df)
+    df = fix_ghdx_pox(df)
+    df = fix_ghdx_injuries(df)
+    df = fix_ghdx_birth_weights(df)
+    return df
+
+
 def concat_str(series):
     return ' '.join(series.dropna().map(str))
 
@@ -250,20 +271,20 @@ def calc_agegroup(series, age_vars):
         return 3
 
 
-def map_ghdx_to_odk(codebook):
+def map_ghdx_to_odk(df, codebook):
     """
     """
-    df = pd.concat([load_fixed_ghdx_data(module) for module in MODULES])
-
     # Some numeric columns contain a sentinel value for missing which was
     # encoded as some number of nines. These should be removed so they are
     # not confused for real durations
     cb = codebook.loc[(codebook.type == 'numeric') & codebook.coding.notnull()]
+    logging.debug('    Fixing sentinel missing values in numeric columns')
     numerics = cb.coding.str.rstrip(' "Don\'t Know"').astype(int)
     for col, missing in numerics.iteritems():
         if col in df:
             df.loc[df[col] == missing, col] = float('nan')
 
+    logging.debug('    Fixing multiselect values')
     # ODK only has a single "select one" question for location of belly pain.
     # Upper belly pain is not relevant for tariff, only lower belly pain is
     # important. If lower belly pain is in the secondary belly pain location
@@ -288,6 +309,7 @@ def map_ghdx_to_odk(codebook):
     # Duration variables in the data files are in a single variable and have
     # been converted to days. ODK is expecting a variable which says the unit
     # a variable with the value in that unit.
+    logging.debug('    Mapping duration columns')
     duration_scalar = {2: 1 / 30, 3: 1 / 7, 4: 1, 5: 24}
     for orig_col, (unit_col, val_col, unit_val) in DURATION_VARS.items():
         if orig_col in df:
@@ -297,10 +319,12 @@ def map_ghdx_to_odk(codebook):
     # ODK encodes multiselect answers as strings of space separated ints
     # The datasets split multiselects into series of columns. There are two
     # formats: 1) multiple encoded categoricals and 2) binarized
+    logging.debug('    Mapping multiselect categorical columns')
     for target, (sources, missing) in MULTISELECT_CATEGORICAL_VARS.items():
         if df.columns.intersection(sources).any():
             df[target] = df[sources].apply(concat_encoded, missing=missing,
                                            axis=1)
+    logging.debug('    Mapping multiselect binary columns')
     for target, mapping in MULTISELECT_BINARY_VARS.items():
         cols = df.columns.intersection(mapping.keys())
         if cols.any():
@@ -312,15 +336,18 @@ def map_ghdx_to_odk(codebook):
     df = df.rename(columns=VAR_CONVERSION_MAP)
 
     # Create age variables from ODK ages columns
+    logging.debug('    Mapping ages')
     df['agedays'] = df.apply(calc_agedays, age_vars=ODK_AGE_VARS, axis=1)
     df['gen_5_4d'] = df.apply(calc_agegroup, age_vars=ODK_AGE_VARS, axis=1)
 
     # Combine words into dummy freetext
+    logging.debug('    Mapping freetext')
     freetext = df.filter(like="word_").apply(combine_freetext, axis=1)
     for module, var in FREETEXT_VARS.items():
         df.loc[df.module.str.lower() == module, var] = freetext
 
     # Map to the short form freetext variables
+    logging.debug('    Mapping Short Questionnaire checklist words')
     for short, full in ODK_FREETEXT_SHORT_TO_LONG.items():
         cols = df.columns.intersection(['word_{}'.format(w) for w in full])
         if cols.any():
@@ -338,21 +365,49 @@ def remove_float_zero(x):
 
 def main():
     save_ghdx_gold_standards()
-    codebook = clean_ghdx_codebook()
-    df = map_ghdx_to_odk(codebook)
-    df = df.fillna('').astype(str).applymap(remove_float_zero)
 
-    odk_codebook = get_codebook('odk').drop('sid')
+    codebook = clean_ghdx_codebook()
+    codebook_filepath = CODEBOOKS_DIR / 'ghdx.csv'
+    logging.info(fmt_magenta('Saving: ') + str(codebook_filepath))
+    codebook.to_csv(codebook_filepath, encoding='utf-8')
+
+    df = pd.concat([load_ghdx_data(module).pipe(fixed_ghdx_data)
+                                          .pipe(map_ghdx_to_odk, codebook)
+                    for module in MODULES]) \
+           .fillna('').astype(str).applymap(remove_float_zero)
+
+    odk_codebook_filepath = CODEBOOKS_DIR / 'odk.csv'
+    odk_codebook = pd.read_csv(odk_codebook_filepath, index_col=0).drop('sid')
     df = df.loc[:, odk_codebook.index.tolist()].fillna('')
 
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    odk_full_filepath = OUT_DIR / 'ghdx_full.csv'
     full = df.copy()
     full.loc[:, odk_codebook.loc[odk_codebook.full == 0].index] = ''
-    full.to_csv(os.path.join(REPO_DIR, 'data', 'odk', 'ghdx_full.csv'))
+    logging.info(fmt_magenta('Saving: ') + str(odk_full_filepath))
+    full.to_csv(odk_full_filepath, encoding='utf-8')
 
+    odk_short_filepath = OUT_DIR / 'ghdx_short.csv'
     short = df.copy()
     short.loc[:, odk_codebook.loc[odk_codebook.short == 0].index] = ''
-    short.to_csv(os.path.join(REPO_DIR, 'data', 'odk', 'ghdx_short.csv'))
+    logging.info(fmt_magenta('Saving: ') + str(odk_short_filepath))
+    short.to_csv(odk_short_filepath, encoding='utf-8')
+
+
+@click.command()
+@click.option('-q', '--quiet', is_flag=True, help='Suppress messages.')
+@click.option('-v', '--verbose', is_flag=True, help='Show extra messages.')
+def cli(quiet, verbose):
+    if quiet:
+        log_lvl = logging.WARNING
+    elif verbose:
+        log_lvl = logging.DEBUG
+    else:
+        log_lvl = logging.INFO
+    logging.basicConfig(level=log_lvl, format='%(message)s')
+    main()
 
 
 if __name__ == '__main__':
-    main()
+    cli()

@@ -236,7 +236,7 @@ a4_02_7,Type of tobacco used: don't know,Adult,0,"0 ""No"" 1 ""Yes"" 8 ""Refused
 a4_03,How much pipe/chewing tobacco did [name] use daily?,Adult,0,,numeric
 a4_04,How many cigarettes did [name] smoke daily?,Adult,0,,numeric
 a4_05,Did [name] drink alcohol?,Adult,0,"0 ""No"" 1 ""Yes"" 8 ""Refused to Answer"" 9 ""Don't Know""",categorical
-a4_06,Would you say the amount of alcohol [name] drank daily was…?,Adult,0,"1 ""Low"" 2 ""Moderate"" 3 ""High"" 8 ""Refused to Answer"" 9 ""Don't Know""",categorical
+a4_06,Would you say the amount of alcohol [name] drank daily wasâ€¦?,Adult,0,"1 ""Low"" 2 ""Moderate"" 3 ""High"" 8 ""Refused to Answer"" 9 ""Don't Know""",categorical
 a5_01_1,Decedent suffered road traffic injury,Adult,0,"0 ""No"" 1 ""Yes"" 8 ""Refused to Answer"" 9 ""Don't Know""",categorical
 a5_01_2,Decedent suffered fall,Adult,0,"0 ""No"" 1 ""Yes"" 8 ""Refused to Answer"" 9 ""Don't Know""",categorical
 a5_01_3,Decedent suffered drowning,Adult,0,"0 ""No"" 1 ""Yes"" 8 ""Refused to Answer"" 9 ""Don't Know""",categorical

@@ -518,4 +518,3 @@ ODK_FREETEXT_SHORT_TO_LONG = {
     'neonate_6_5': ['preterm'],
     'neonate_6_6': ['respiratori', 'distress'],
 }
-
