@@ -35,7 +35,7 @@ package.
 
 #### Docs
 We (ok I) use Google-style docstrings to document code. Docs can be built by
-running `make html` from with the `./docs` directory. This require at least
+running `make html` from within the `./docs` directory. This require at least
 sphinx 1.5, which has napoleon as a built in extension. #thefutureisnow
 
 #### Tests
@@ -62,7 +62,7 @@ Otherwise, these will be skipped.
   Chance correction of the CSMF  accuracy measure.
 
 ### Relationship to other repos in this project
-This code hopes to unify previous work from other repos in the VA project.
+This code contains pieces of previous work from other repos in the VA project.
 
 Processing of NHMRC data originally occurred in:
 * https://stash.ihme.washington.edu/projects/VA/repos/nhmrc_mapping/browse
