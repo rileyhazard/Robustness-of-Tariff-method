@@ -1,0 +1,82 @@
+# This is the cause aggregation used in the analysis.
+# It matches the causes reported in the outputs of SmartVA-Analyze v1.2
+
+adult:
+    AIDS: AIDS
+    AIDS with TB: AIDS
+    Anemia: Maternal
+    Asthma: Chronic Respiratory
+    Bite of Venomous Animal: Bite of Venomous Animal
+    Breast Cancer: Breast Cancer
+    Cervical Cancer: Cervical Cancer
+    Cirrhosis: Cirrhosis
+    Colorectal Cancer: Colorectal Cancer
+    COPD: Chronic Respiratory
+    Diabetes with Coma: Diabetes
+    Diabetes with Renal Failure: Diabetes
+    Diabetes with Skin Infection/Sepsis: Diabetes
+    Diarrhea/Dysentery: Diarrhea/Dysentery
+    Drowning: Drowning
+    Epilepsy: Other Non-communicable Diseases
+    Esophageal Cancer: Esophageal Cancer
+    Falls: Falls
+    Fires: Fires
+    Hemorrhage: Maternal
+    Homicide: Homicide
+    Hypertensive Disorder: Maternal
+    Acute Myocardial Infarction: Ischemic Heart Disease
+    Congestive Heart Failure: Ischemic Heart Disease
+    Inflammatory Heart Disease: Other Cardiovascular Diseases
+    Leukemia: Leukemia/Lymphomas
+    Lung Cancer: Lung Cancer
+    Lymphomas: Leukemia/Lymphomas
+    Malaria: Malaria
+    Other Cancers: Other Cancers
+    Other Cardiovascular Diseases: Other Cardiovascular Diseases
+    Other Digestive Diseases: Other Non-communicable Diseases
+    Other Infectious Diseases: Other Infectious Diseases
+    Other Injuries: Other Injuries
+    Other Non-communicable Diseases: Other Non-communicable Diseases
+    Other Pregnancy-Related Deaths: Maternal
+    Pneumonia: Pneumonia
+    Poisonings: Poisonings
+    Prostate Cancer: Prostate Cancer
+    Renal Failure: Renal Failure
+    Road Traffic: Road Traffic
+    Sepsis: Maternal
+    Stomach Cancer: Stomach Cancer
+    Stroke: Stroke
+    Suicide: Suicide
+    TB: TB
+
+child:
+    Bite of Venomous Animal: Bite of Venomous Animal
+    Drowning: Drowning
+    Falls: Falls
+    Fires: Fires
+    Other Injuries: Other Injuries
+    Poisonings: Poisonings
+    Road Traffic: Road Traffic
+    Violent Death: Violent Death
+    AIDS: AIDS
+    Diarrhea/Dysentery: Diarrhea/Dysentery
+    Encephalitis: Encephalitis
+    Hemorrhagic fever: Hemorrhagic fever
+    Malaria: Malaria
+    Measles: Measles
+    Meningitis: Meningitis
+    Other Infectious Diseases: Other Infectious Diseases
+    Pneumonia: Pneumonia
+    Sepsis: Sepsis
+    Other Cancers: Other Cancers
+    Other Cardiovascular Diseases: Other Cardiovascular Diseases
+    Other Defined Causes of Child Deaths: Other Defined Causes of Child Deaths
+    Other Digestive Diseases: Other Digestive Diseases
+
+neonate:
+    Meningitis/Sepsis: Meningitis/Sepsis
+    Pneumonia: Pneumonia
+    Congenital malformation: Congenital malformation
+    Birth asphyxia: Birth asphyxia
+    Preterm Delivery: Preterm Delivery
+    Stillbirth: Stillbirth

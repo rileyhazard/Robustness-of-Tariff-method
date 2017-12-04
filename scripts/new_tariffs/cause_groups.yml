@@ -1,0 +1,83 @@
+# Causes groups are mainly for report purposes and have no analytic meaning
+# These are used in the excel reports to create an additional column that
+# can be used for filter results.
+
+adult:
+    AIDS: Chronic Infectious
+    AIDS with TB: Chronic Infectious
+    Anemia: Maternal
+    Asthma: NCD
+    Bite of Venomous Animal: Injury
+    Breast Cancer: Cancer
+    Cervical Cancer: Cancer
+    Cirrhosis: NCD
+    Colorectal Cancer: Cancer
+    COPD: NCD
+    Diabetes with Coma: NCD
+    Diabetes with Renal Failure: NCD
+    Diabetes with Skin Infection/Sepsis: NCD
+    Diarrhea/Dysentery: Infectious
+    Drowning: Injury
+    Epilepsy: Neuro
+    Esophageal Cancer: Cancer
+    Falls: Injury
+    Fires: Injury
+    Hemorrhage: Maternal
+    Homicide: Injury
+    Hypertensive Disorder: Maternal
+    Acute Myocardial Infarction: Cardiovascular
+    Congestive Heart Failure: Cardiovascular
+    Inflammatory Heart Disease: Cardiovascular
+    Leukemia: Cancer
+    Lung Cancer: Cancer
+    Lymphomas: Cancer
+    Malaria: Infectious
+    Other Cancers: Cancer
+    Other Cardiovascular Diseases: Cardiovascular
+    Other Digestive Diseases: NCD
+    Other Infectious Diseases: Infectious
+    Other Injuries: Injury
+    Other Non-communicable Diseases: NCD
+    Other Pregnancy-Related Deaths: Maternal
+    Pneumonia: Infectious
+    Poisonings: Injury
+    Prostate Cancer: Cancer
+    Renal Failure: NCD
+    Road Traffic: Injury
+    Sepsis: Maternal
+    Stomach Cancer: Cancer
+    Stroke: Neuro
+    Suicide: Injury
+    TB: Chronic Infectious
+
+child:
+    Bite of Venomous Animal: Injury
+    Drowning: Injury
+    Falls: Injury
+    Fires: Injury
+    Other Injuries: Injury
+    Poisonings: Injury
+    Road Traffic: Injury
+    Violent Death: Injury
+    AIDS: Infectious
+    Diarrhea/Dysentery: Infectious
+    Encephalitis: Infectious
+    Hemorrhagic fever: Infectious
+    Malaria: Infectious
+    Measles: Infectious
+    Meningitis: Infectious
+    Other Infectious Diseases: Infectious
+    Pneumonia: Infectious
+    Sepsis: Infectious
+    Other Cancers: NCD
+    Other Cardiovascular Diseases: NCD
+    Other Defined Causes of Child Deaths: NCD
+    Other Digestive Diseases: NCD
+
+neonate:
+    Meningitis/Sepsis: Infectious
+    Pneumonia: Infectious
+    Congenital malformation: Neonatal
+    Birth asphyxia: Neonatal
+    Preterm Delivery: Neonatal
+    Stillbirth: Stillbirth
