@@ -236,7 +236,7 @@ def out_of_sample_splits(X, y, n_splits=10, test_size=.25, random_state=None):
     rs = check_random_state(random_state)
     splitter = StratifiedShuffleSplit(n_splits=n_splits, test_size=test_size,
                                       random_state=rs)
-    for i, (train_index, test_index) in splitter.split(X, y):
+    for i, (train_index, test_index) in enumerate(splitter.split(X, y)):
         yield train_index, test_index, i
 
 

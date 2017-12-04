@@ -215,7 +215,7 @@ class TariffClassifier(BaseEstimator, ClassifierMixin):
         self.valid_ = valid
         self.pred_ = pred
 
-        return pred
+        return pred, pred.value_counts(dropna=False, normalize=True)
 
     def predict_csmf(self, X):
         """Predict cause-specific mortality fractions
@@ -533,9 +533,9 @@ def calc_cutoffs(X, y, cutoff=95):
     # between predictions using the same data
     X_sorted = X.argsort(0, kind='mergesort')[::-1]
 
-    ranks = [np.percentile(np.where(y[X_sorted[:, j]] == j)[0] + 1, cutoff,
+    ranks = np.array([np.percentile(np.where(y[X_sorted[:, j]] == j)[0] + 1, cutoff,
                            interpolation='higher')
-             for j in range(X.shape[1])]
+             for j in range(X.shape[1])])
 
     scores = X[ranks - 1, np.arange(X.shape[1])]
 
