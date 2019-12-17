@@ -64,3 +64,9 @@ target/
 notebooks/
 data/*
 external/*
+scripts/gbd/
+scripts/ghdx/
+scripts/cluster/launch_undetermined.sh
+scripts/undetermined/
+scripts/data_release/
+dist/
