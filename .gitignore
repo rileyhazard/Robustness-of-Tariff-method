@@ -70,3 +70,5 @@ scripts/cluster/launch_undetermined.sh
 scripts/undetermined/
 scripts/data_release/
 dist/
+
+README.md
