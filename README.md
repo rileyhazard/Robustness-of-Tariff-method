@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/228509541.svg)](https://zenodo.org/badge/latestdoi/228509541)
+
 # Robustness-of-Tariff-method
 Robustness of the Tariff method for diagnosing verbal autopsies: impact of additional site data on the relationship between symptom and cause
 
